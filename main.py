@@ -21,7 +21,7 @@ app.mount("/", StaticFiles(directory="public", html=True), name="static")
 # /lifesavers: lon → lng 변환해서 반환
 @app.get("/lifesavers")
 def get_lifesavers():
-    with open("public/gangneung_lifesavers.json", encoding="utf-8") as f:
+    with open("public/lifesavers.json", encoding="utf-8") as f:
         data = json.load(f)
     
     for item in data:
