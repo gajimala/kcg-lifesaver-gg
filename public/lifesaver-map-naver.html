@@ -32,9 +32,8 @@
 <button id="mapTypeSelector">위성 지도</button>
 
 <script>
-  // 네이버 지도 초기화
   var map = new naver.maps.Map('map', {
-    center: new naver.maps.LatLng(37.5665, 126.9780),  // 초기 위치 설정 (서울)
+    center: new naver.maps.LatLng(37.5665, 126.9780),
     zoom: 17,
     mapTypeId: naver.maps.MapTypeId.NORMAL
   });
@@ -47,7 +46,6 @@
   var watchId = null;
   var infoWindow = new naver.maps.InfoWindow();
 
-  // 첫 화면에서 내 위치로 자동 이동
   function getLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(position) {
@@ -55,11 +53,9 @@
         myLon = position.coords.longitude;
         var myLocation = new naver.maps.LatLng(myLat, myLon);
 
-        // 내 위치로 지도 중심 이동 및 줌 설정
         map.setCenter(myLocation);
         map.setZoom(17);
 
-        // 내 위치 마커 설정
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
         } else {
@@ -83,7 +79,6 @@
     }
   }
 
-  // 내 위치만 추적 (마커 갱신)
   function startTracking() {
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(function(position) {
@@ -91,7 +86,6 @@
         myLon = position.coords.longitude;
         var myLocation = new naver.maps.LatLng(myLat, myLon);
 
-        // 내 위치 마커만 갱신하고, 지도는 이동하지 않음
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
         } else {
@@ -115,9 +109,8 @@
     }
   }
 
-  // 구조물 마커 불러오기
   function loadMarkers() {
-    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
+    fetch("https://lifesaver-api-1099287947809.asia-northeast3.run.app/lifesavers")
       .then(function(response) { return response.json(); })
       .then(function(data) {
         lifesavers = data;
@@ -168,7 +161,6 @@
       });
   }
 
-  // 지도 내 마커가 화면에 표시되도록
   function updateMarkers() {
     if (lifesavers.length === 0) return;
 
@@ -189,20 +181,18 @@
 
   naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
 
-  getLocation();  // 첫 로드 시 내 위치로 자동 이동
-  startTracking();  // 내 위치만 따라다님
+  getLocation();
+  startTracking();
   loadMarkers();
 
-  // 내 위치로 이동 버튼
   document.getElementById('locationButton').addEventListener('click', function() {
     if (myLat && myLon) {
       const center = new naver.maps.LatLng(myLat, myLon);
-      map.setCenter(center);  // 내 위치로 지도 중심 이동
-      map.setZoom(17);  // 줌 레벨 설정
+      map.setCenter(center);
+      map.setZoom(17);
     }
   });
 
-  // 지도 타입 변경
   document.getElementById('mapTypeSelector').addEventListener('click', function() {
     if (map.getMapTypeId() === naver.maps.MapTypeId.SATELLITE) {
       map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
