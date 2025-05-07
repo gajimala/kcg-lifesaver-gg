@@ -1,0 +1,38 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 push될 때만 동작
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Authenticate Docker
+        run: gcloud auth configure-docker
+
+      - name: Build and Push Docker image
+        run: |
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/lifesaver-api .
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/lifesaver-api
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy lifesaver-api \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/lifesaver-api \
+            --platform managed \
+            --region asia-northeast3 \
+            --allow-unauthenticated \
+            --port 8000
