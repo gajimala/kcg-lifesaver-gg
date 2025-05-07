@@ -35,8 +35,8 @@
 
 <script>
   const map = new kakao.maps.Map(document.getElementById('map'), {
-    center: new kakao.maps.LatLng(37.75, 128.9),  // 초기 위치 설정
-    level: 9  // 줌 레벨을 초기 상태로 설정
+    center: new kakao.maps.LatLng(37.75, 128.9),
+    level: 9
   });
 
   var markers = [];
@@ -47,7 +47,6 @@
   var infoWindow = new kakao.maps.InfoWindow();
   var watchId = null;
 
-  // 지도 타입 초기값 설정
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
   function startTracking() {
@@ -57,7 +56,6 @@
         myLon = position.coords.longitude;
         var myLocation = new kakao.maps.LatLng(myLat, myLon);
 
-        // 내 위치 마커만 갱신하고, 지도는 이동하지 않음
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
         } else {
@@ -82,7 +80,7 @@
   }
 
   function loadMarkers() {
-    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
+    fetch("https://lifesaver-api-1099287947809.asia-northeast3.run.app/lifesavers")
       .then(res => res.json())
       .then(data => {
         lifesavers = data;
@@ -145,31 +143,27 @@
 
   kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
 
-  // 첫 화면에서 내 위치 가져오기 및 줌 설정
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(position) {
       myLat = position.coords.latitude;
       myLon = position.coords.longitude;
       var myLocation = new kakao.maps.LatLng(myLat, myLon);
-
-      map.setCenter(myLocation);  // 내 위치로 지도 중심 이동
-      map.setLevel(5);  // 내 위치로 줌 설정
+      map.setCenter(myLocation);
+      map.setLevel(5);
     });
   }
 
-  startTracking();  // 내 위치만 따라다님
+  startTracking();
   loadMarkers();
 
-  // 내 위치 버튼 클릭 시 지도 중심을 내 위치로 이동
   document.getElementById('locationButton').addEventListener('click', function() {
     if (myLat && myLon) {
       const center = new kakao.maps.LatLng(myLat, myLon);
-      map.setCenter(center);  // 지도 중심을 내 위치로 이동
-      map.setLevel(5);  // 줌 레벨 설정
+      map.setCenter(center);
+      map.setLevel(5);
     }
   });
 
-  // 지도 타입 토글
   document.getElementById('mapTypeSelector').addEventListener('click', function() {
     if (map.getMapTypeId() === kakao.maps.MapTypeId.SKYVIEW) {
       map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
