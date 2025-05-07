@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>인명구조함 지도 (네이버 앱용)</title>
+  <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
+  <style>
+    html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
+    #locationButton, #mapTypeSelector {
+      position: absolute;
+      left: 10px;
+      z-index: 100;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #locationButton:hover, #mapTypeSelector:hover {
+      background: rgba(240, 240, 240, 0.9);
+    }
+    #locationButton { top: 10px; }
+    #mapTypeSelector { top: 50px; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<button id="locationButton">내 위치로 이동</button>
+<button id="mapTypeSelector">위성 지도</button>
+
+<script>
+  // 네이버 지도 초기화
+  var map = new naver.maps.Map('map', {
+    center: new naver.maps.LatLng(37.5665, 126.9780),  // 초기 위치 설정 (서울)
+    zoom: 17,
+    mapTypeId: naver.maps.MapTypeId.NORMAL
+  });
+
+  var markers = [];
+  var lifesavers = [];
+  var myLocationMarker = null;
+  var myLat = null;
+  var myLon = null;
+  var watchId = null;
+  var infoWindow = new naver.maps.InfoWindow();
+
+  // 첫 화면에서 내 위치로 자동 이동
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        myLat = position.coords.latitude;
+        myLon = position.coords.longitude;
+        var myLocation = new naver.maps.LatLng(myLat, myLon);
+
+        // 내 위치로 지도 중심 이동 및 줌 설정
+        map.setCenter(myLocation);
+        map.setZoom(17);
+
+        // 내 위치 마커 설정
+        if (myLocationMarker) {
+          myLocationMarker.setPosition(myLocation);
+        } else {
+          myLocationMarker = new naver.maps.Marker({
+            position: myLocation,
+            map: map,
+            icon: {
+              content: '<div style="width:12px; height:12px; background:#4285F4; border-radius:50%; border:2px solid white;"></div>',
+              anchor: new naver.maps.Point(6, 6)
+            }
+          });
+        }
+      }, function(error) {
+        console.error("위치 추적 실패:", error);
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0
+      });
+    } else {
+      console.error("Geolocation 미지원");
+    }
+  }
+
+  // 내 위치만 추적 (마커 갱신)
+  function startTracking() {
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(function(position) {
+        myLat = position.coords.latitude;
+        myLon = position.coords.longitude;
+        var myLocation = new naver.maps.LatLng(myLat, myLon);
+
+        // 내 위치 마커만 갱신하고, 지도는 이동하지 않음
+        if (myLocationMarker) {
+          myLocationMarker.setPosition(myLocation);
+        } else {
+          myLocationMarker = new naver.maps.Marker({
+            position: myLocation,
+            map: map,
+            icon: {
+              content: '<div style="width:12px; height:12px; background:#4285F4; border-radius:50%; border:2px solid white;"></div>',
+              anchor: new naver.maps.Point(6, 6)
+            }
+          });
+        }
+      }, function(error) {
+        console.error("위치 추적 실패:", error);
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0
+      });
+    } else {
+      console.error("Geolocation 미지원");
+    }
+  }
+
+  // 구조물 마커 불러오기
+  function loadMarkers() {
+    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        lifesavers = data;
+        data.forEach(function(item) {
+          if (item.lat && item.lng) {
+            var marker = new naver.maps.Marker({
+              position: new naver.maps.LatLng(item.lat, item.lng),
+              map: map,
+              title: item.name || "인명구조함",
+              icon: {
+                url: "/lifesaver-icon.png",
+                size: new naver.maps.Size(27, 30),
+                scaledSize: new naver.maps.Size(27, 30),
+                origin: new naver.maps.Point(0, 0),
+                anchor: new naver.maps.Point(13, 30)
+              }
+            });
+            markers.push(marker);
+
+            naver.maps.Event.addListener(marker, 'click', function() {
+              if (myLat === null || myLon === null) {
+                alert('현재 위치를 가져올 수 없습니다.');
+                return;
+              }
+
+              var appname = 'com.example.app';
+              var nmapUrl = `nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=${appname}`;
+
+              var iwContent = ` 
+                <div style="padding:6px; font-size:13px;">
+                  ${item.name || "인명구조함"}<br>
+                  <button onclick="window.location.href='${nmapUrl}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                    길찾기 (네이버앱)
+                  </button>
+                </div>
+              `;
+
+              infoWindow.setContent(iwContent);
+              infoWindow.open(map, marker);
+            });
+          }
+        });
+
+        updateMarkers();
+      })
+      .catch(function(error) {
+        console.error('lifesavers.json 불러오기 오류:', error);
+      });
+  }
+
+  // 지도 내 마커가 화면에 표시되도록
+  function updateMarkers() {
+    if (lifesavers.length === 0) return;
+
+    var bounds = map.getBounds();
+    var sw = bounds.getSW();
+    var ne = bounds.getNE();
+
+    markers.forEach(function(marker, index) {
+      var item = lifesavers[index];
+      if (item.lat >= sw._lat && item.lat <= ne._lat &&
+          item.lng >= sw._lng && item.lng <= ne._lng) {
+        marker.setMap(map);
+      } else {
+        marker.setMap(null);
+      }
+    });
+  }
+
+  naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
+
+  getLocation();  // 첫 로드 시 내 위치로 자동 이동
+  startTracking();  // 내 위치만 따라다님
+  loadMarkers();
+
+  // 내 위치로 이동 버튼
+  document.getElementById('locationButton').addEventListener('click', function() {
+    if (myLat && myLon) {
+      const center = new naver.maps.LatLng(myLat, myLon);
+      map.setCenter(center);  // 내 위치로 지도 중심 이동
+      map.setZoom(17);  // 줌 레벨 설정
+    }
+  });
+
+  // 지도 타입 변경
+  document.getElementById('mapTypeSelector').addEventListener('click', function() {
+    if (map.getMapTypeId() === naver.maps.MapTypeId.SATELLITE) {
+      map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
+      this.textContent = '위성 지도';
+    } else {
+      map.setMapTypeId(naver.maps.MapTypeId.SATELLITE);
+      this.textContent = '일반 지도';
+    }
+  });
+</script>
+
+</body>
+</html>

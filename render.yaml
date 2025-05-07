@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gangneung-lifesaver-api
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "sh start.sh"
+    autoDeploy: true
+    staticPublishPath: public  # ✅ 추가! "/static/" 경로 자동 연결
+    buildFilter:
+      paths:
+        - main.py
+        - start.sh
+        - render.yaml
+        - requirements.txt
+        - public/**
+        - *.json

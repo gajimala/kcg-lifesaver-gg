@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>구조 요청 확인</title>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7"></script>
+  <style>
+    html, body, #map {
+      height: 100%; margin: 0; padding: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+  const map = new kakao.maps.Map(document.getElementById('map'), {
+    center: new kakao.maps.LatLng(37.5665, 126.9780),
+    level: 8
+  });
+
+  fetch("/requests.json")
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(req => {
+        const pos = new kakao.maps.LatLng(req.lat, req.lon);
+        const marker = new kakao.maps.Marker({
+          position: pos,
+          map: map,
+          title: "구조 요청 위치"
+        });
+
+        const date = new Date(req.timestamp);
+        const infoWindow = new kakao.maps.InfoWindow({
+          content: `<div style="padding:6px; font-size:13px;">구조 요청<br>${date.toLocaleString()}</div>`
+        });
+
+        kakao.maps.event.addListener(marker, 'click', function() {
+          infoWindow.open(map, marker);
+        });
+      });
+    })
+    .catch(err => {
+      console.error("요청 데이터 로드 오류:", err);
+    });
+</script>
+
+</body>
+</html>

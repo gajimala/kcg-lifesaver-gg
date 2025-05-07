@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>인명구조함 지도 (카카오)</title>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7&libraries=clusterer"></script>
+  <style>
+    html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
+    #locationButton, #mapTypeSelector {
+      position: absolute;
+      left: 10px;
+      z-index: 100;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #locationButton:hover, #mapTypeSelector:hover {
+      background: rgba(240, 240, 240, 0.9);
+    }
+    #locationButton { top: 10px; }
+    #mapTypeSelector { top: 50px; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<button id="locationButton">내 위치로 이동</button>
+<button id="mapTypeSelector">항공뷰</button>
+
+<script>
+  const map = new kakao.maps.Map(document.getElementById('map'), {
+    center: new kakao.maps.LatLng(37.75, 128.9),  // 초기 위치 설정
+    level: 9  // 줌 레벨을 초기 상태로 설정
+  });
+
+  var markers = [];
+  var lifesavers = [];
+  var myLat = null;
+  var myLon = null;
+  var myLocationMarker = null;
+  var infoWindow = new kakao.maps.InfoWindow();
+  var watchId = null;
+
+  // 지도 타입 초기값 설정
+  map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
+
+  function startTracking() {
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(function(position) {
+        myLat = position.coords.latitude;
+        myLon = position.coords.longitude;
+        var myLocation = new kakao.maps.LatLng(myLat, myLon);
+
+        // 내 위치 마커만 갱신하고, 지도는 이동하지 않음
+        if (myLocationMarker) {
+          myLocationMarker.setPosition(myLocation);
+        } else {
+          myLocationMarker = new kakao.maps.Marker({
+            position: myLocation,
+            map: map,
+            image: new kakao.maps.MarkerImage(
+              'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+              new kakao.maps.Size(24, 35)
+            )
+          });
+        }
+      }, function(error) {
+        console.error("위치 추적 실패:", error);
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0
+      });
+    } else {
+      console.error("Geolocation 미지원");
+    }
+  }
+
+  function loadMarkers() {
+    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
+      .then(res => res.json())
+      .then(data => {
+        lifesavers = data;
+
+        for (var i = 0; i < lifesavers.length; i++) {
+          (function(item) {
+            if (item.lat && item.lng) {
+              var marker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(item.lat, item.lng),
+                title: item.name || "인명구조함",
+                image: new kakao.maps.MarkerImage(
+                  "/lifesaver-icon.png",
+                  new kakao.maps.Size(40, 45),
+                  { offset: new kakao.maps.Point(20, 45) }
+                )
+              });
+              markers.push(marker);
+
+              kakao.maps.event.addListener(marker, 'click', function() {
+                var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
+                var iwContent = `
+                  <div style="padding:6px; font-size:13px;">
+                    인명구조함<br>
+                    <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                      길찾기
+                    </button>
+                  </div>
+                `;
+                infoWindow.setContent(iwContent);
+                infoWindow.open(map, marker);
+              });
+            }
+          })(lifesavers[i]);
+        }
+
+        updateMarkers();
+      })
+      .catch(error => {
+        console.error('lifesavers.json 불러오기 오류:', error);
+      });
+  }
+
+  function updateMarkers() {
+    if (lifesavers.length === 0) return;
+
+    var bounds = map.getBounds();
+    var sw = bounds.getSouthWest();
+    var ne = bounds.getNorthEast();
+
+    markers.forEach(function(marker, index) {
+      var item = lifesavers[index];
+      if (item.lat >= sw.getLat() && item.lat <= ne.getLat() &&
+          item.lng >= sw.getLng() && item.lng <= ne.getLng()) {
+        marker.setMap(map);
+      } else {
+        marker.setMap(null);
+      }
+    });
+  }
+
+  kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
+
+  // 첫 화면에서 내 위치 가져오기 및 줌 설정
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      myLat = position.coords.latitude;
+      myLon = position.coords.longitude;
+      var myLocation = new kakao.maps.LatLng(myLat, myLon);
+
+      map.setCenter(myLocation);  // 내 위치로 지도 중심 이동
+      map.setLevel(5);  // 내 위치로 줌 설정
+    });
+  }
+
+  startTracking();  // 내 위치만 따라다님
+  loadMarkers();
+
+  // 내 위치 버튼 클릭 시 지도 중심을 내 위치로 이동
+  document.getElementById('locationButton').addEventListener('click', function() {
+    if (myLat && myLon) {
+      const center = new kakao.maps.LatLng(myLat, myLon);
+      map.setCenter(center);  // 지도 중심을 내 위치로 이동
+      map.setLevel(5);  // 줌 레벨 설정
+    }
+  });
+
+  // 지도 타입 토글
+  document.getElementById('mapTypeSelector').addEventListener('click', function() {
+    if (map.getMapTypeId() === kakao.maps.MapTypeId.SKYVIEW) {
+      map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
+      this.textContent = '항공뷰';
+    } else {
+      map.setMapTypeId(kakao.maps.MapTypeId.SKYVIEW);
+      this.textContent = '일반 지도';
+    }
+  });
+</script>
+
+</body>
+</html>
