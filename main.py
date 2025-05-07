@@ -15,10 +15,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 정적 파일 서빙 (public 폴더 아래의 HTML 등)
+# 정적 파일 서빙
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
 
-# /lifesavers 경로에서 JSON 반환 (lon → lng 변환 포함)
+# /lifesavers: lon → lng 변환해서 반환
 @app.get("/lifesavers")
 def get_lifesavers():
     with open("public/gangneung_lifesavers.json", encoding="utf-8") as f:
