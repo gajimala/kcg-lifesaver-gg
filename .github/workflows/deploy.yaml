@@ -2,7 +2,8 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
   deploy:
@@ -13,25 +14,25 @@ jobs:
       id-token: 'write'
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Set up Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
-      with:
-        project_id: kcg-lifesaver-459116
-        install_components: 'beta'
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: kcg-helpme-2025
+          install_components: 'beta'
 
-    - name: Deploy to Cloud Run
-      run: |
-        gcloud builds submit --tag gcr.io/kcg-lifesaver-459116/lifesaver-api
-        gcloud run deploy lifesaver-api \
-          --image gcr.io/kcg-lifesaver-459116/lifesaver-api \
-          --platform managed \
-          --region asia-northeast3 \
-          --allow-unauthenticated
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud builds submit --tag gcr.io/kcg-helpme-2025/lifesaver-api
+          gcloud run deploy lifesaver-api \
+            --image gcr.io/kcg-helpme-2025/lifesaver-api \
+            --platform managed \
+            --region asia-northeast3 \
+            --allow-unauthenticated
