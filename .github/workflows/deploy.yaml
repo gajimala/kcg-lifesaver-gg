@@ -2,8 +2,7 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
 
 jobs:
   deploy:
@@ -27,6 +26,9 @@ jobs:
         with:
           project_id: kcg-helpme-2025
           install_components: 'beta'
+
+      - name: Set active service account
+        run: gcloud config set account github-deployer@kcg-helpme-2025.iam.gserviceaccount.com
 
       - name: Deploy to Cloud Run
         run: |
