@@ -26,4 +26,4 @@ def get_lifesavers():
             data = json.load(f)
         return data
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e)}  # 🔥 에러 원인을 직접 확인
