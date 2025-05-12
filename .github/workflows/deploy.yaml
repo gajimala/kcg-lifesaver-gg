@@ -24,17 +24,14 @@ jobs:
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: kcg-helpme-2025
+          project_id: kcg-helpmE-2025
           install_components: 'beta'
-
-      - name: Set active service account
-        run: gcloud config set account github-deployer@kcg-helpme-2025.iam.gserviceaccount.com
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud builds submit --tag gcr.io/kcg-helpme-2025/lifesaver-api
+          gcloud builds submit --tag gcr.io/kcg-helpmE-2025/lifesaver-api
           gcloud run deploy lifesaver-api \
-            --image gcr.io/kcg-helpme-2025/lifesaver-api \
+            --image gcr.io/kcg-helpmE-2025/lifesaver-api \
             --platform managed \
-            --region asia-northeast3 \
+            --region us \
             --allow-unauthenticated
