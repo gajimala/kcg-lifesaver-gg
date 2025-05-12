@@ -22,7 +22,7 @@ app.mount("/", StaticFiles(directory="public", html=True), name="static")
 @app.get("/lifesavers")
 def get_lifesavers():
     try:
-        with open("public/lifesavers", encoding="utf-8") as f:
+        with open("public/lifesavers.json", encoding="utf-8") as f:
             data = json.load(f)
         return data
     except Exception as e:
