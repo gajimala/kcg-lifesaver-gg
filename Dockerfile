@@ -8,10 +8,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 앱 코드 복사
-COPY . .
+# 앱 코드 복사 (여기 중요!! public 폴더 명시적으로 복사)
+COPY . . 
+COPY public/ ./public/
 
-# 포트 지정 (Cloud Run은 8080 사용)
+# 포트 지정
 ENV PORT 8080
 EXPOSE 8080
 
