@@ -39,22 +39,21 @@
     level: 9
   });
 
-  var markers = [];
-  var lifesavers = [];
-  var myLat = null;
-  var myLon = null;
-  var myLocationMarker = null;
-  var infoWindow = new kakao.maps.InfoWindow();
-  var watchId = null;
+  let markers = [];
+  let lifesavers = [];
+  let myLat = null;
+  let myLon = null;
+  let myLocationMarker = null;
+  let infoWindow = new kakao.maps.InfoWindow();
 
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
   function startTracking() {
     if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(function(position) {
+      navigator.geolocation.watchPosition(function(position) {
         myLat = position.coords.latitude;
         myLon = position.coords.longitude;
-        var myLocation = new kakao.maps.LatLng(myLat, myLon);
+        const myLocation = new kakao.maps.LatLng(myLat, myLon);
 
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
@@ -85,36 +84,35 @@
       .then(data => {
         lifesavers = data;
 
-        for (var i = 0; i < lifesavers.length; i++) {
-          (function(item) {
-            if (item.lat && item.lng) {
-              var marker = new kakao.maps.Marker({
-                position: new kakao.maps.LatLng(item.lat, item.lng),
-                title: item.name || "인명구조함",
-                image: new kakao.maps.MarkerImage(
-                  "/lifesaver-icon.png",
-                  new kakao.maps.Size(40, 45),
-                  { offset: new kakao.maps.Point(20, 45) }
-                )
-              });
-              markers.push(marker);
+        lifesavers.forEach(item => {
+          if (item.lat && item.lng) {
+            const marker = new kakao.maps.Marker({
+              position: new kakao.maps.LatLng(item.lat, item.lng),
+              title: item.name || "인명구조함",
+              image: new kakao.maps.MarkerImage(
+                "/lifesaver-icon.png",
+                new kakao.maps.Size(40, 45),
+                { offset: new kakao.maps.Point(20, 45) }
+              )
+            });
 
-              kakao.maps.event.addListener(marker, 'click', function() {
-                var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
-                var iwContent = `
-                  <div style="padding:6px; font-size:13px;">
-                    인명구조함<br>
-                    <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
-                      길찾기
-                    </button>
-                  </div>
-                `;
-                infoWindow.setContent(iwContent);
-                infoWindow.open(map, marker);
-              });
-            }
-          })(lifesavers[i]);
-        }
+            markers.push(marker);
+
+            kakao.maps.event.addListener(marker, 'click', function () {
+              const url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
+              const iwContent = `
+                <div style="padding:6px; font-size:13px;">
+                  인명구조함<br>
+                  <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                    길찾기
+                  </button>
+                </div>
+              `;
+              infoWindow.setContent(iwContent);
+              infoWindow.open(map, marker);
+            });
+          }
+        });
 
         updateMarkers();
       })
@@ -126,12 +124,12 @@
   function updateMarkers() {
     if (lifesavers.length === 0) return;
 
-    var bounds = map.getBounds();
-    var sw = bounds.getSouthWest();
-    var ne = bounds.getNorthEast();
+    const bounds = map.getBounds();
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
 
-    markers.forEach(function(marker, index) {
-      var item = lifesavers[index];
+    markers.forEach((marker, index) => {
+      const item = lifesavers[index];
       if (item.lat >= sw.getLat() && item.lat <= ne.getLat() &&
           item.lng >= sw.getLng() && item.lng <= ne.getLng()) {
         marker.setMap(map);
@@ -147,7 +145,7 @@
     navigator.geolocation.getCurrentPosition(function(position) {
       myLat = position.coords.latitude;
       myLon = position.coords.longitude;
-      var myLocation = new kakao.maps.LatLng(myLat, myLon);
+      const myLocation = new kakao.maps.LatLng(myLat, myLon);
       map.setCenter(myLocation);
       map.setLevel(5);
     });
