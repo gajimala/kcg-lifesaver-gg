@@ -21,6 +21,9 @@ app.mount("/", StaticFiles(directory="public", html=True), name="static")
 # /lifesavers 경로에서 JSON 반환
 @app.get("/lifesavers")
 def get_lifesavers():
-    with open("public/lifesavers.json", encoding="utf-8") as f:
-        data = json.load(f)
-    return data
+    try:
+        with open("public/lifesavers.json", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+    except Exception as e:
+        return {"error": str(e)}
