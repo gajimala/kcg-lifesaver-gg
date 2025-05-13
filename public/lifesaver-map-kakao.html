@@ -95,7 +95,8 @@
                 { offset: new kakao.maps.Point(20, 45) }
               )
             });
-
+            
+            marker.item = item; // ✅ 이거 추가
             markers.push(marker);
 
             kakao.maps.event.addListener(marker, 'click', function () {
