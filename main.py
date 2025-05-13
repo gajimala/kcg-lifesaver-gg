@@ -1,19 +1,16 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# CORS 설정
+# CORS 허용 (필수 아님. 확장성 고려해 포함)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
-# 정적 파일 서빙 (public 폴더 아래의 HTML 등)
+# public 폴더 전체를 정적 서빙
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
-
-
