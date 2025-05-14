@@ -77,7 +77,7 @@
       .then(res => res.json())
       .then(data => {
         data.forEach(item => {
-          if (item.lat && item.lng) {
+          if (item.lat !== undefined && item.lng !== undefined) {
             const marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(item.lat, item.lng),
               map: map,
@@ -128,7 +128,7 @@
     const sw = bounds.getSW();
     const ne = bounds.getNE();
 
-    markers.forEach((marker, index) => {
+    markers.forEach((marker) => {
       const position = marker.getPosition();
       const lat = position.lat();
       const lng = position.lng();
@@ -164,4 +164,16 @@
     }
   });
 
-  document.getElement
+  document.getElementById('mapTypeSelector').addEventListener('click', function () {
+    if (map.getMapTypeId() === naver.maps.MapTypeId.SATELLITE) {
+      map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
+      this.textContent = '위성 지도';
+    } else {
+      map.setMapTypeId(naver.maps.MapTypeId.SATELLITE);
+      this.textContent = '일반 지도';
+    }
+  });
+</script>
+
+</body>
+</html>
