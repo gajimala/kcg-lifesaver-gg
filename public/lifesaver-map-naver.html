@@ -76,7 +76,7 @@
   }
 
   function loadMarkers() {
-    fetch("lifesavers.json")
+    fetch("https://kcghelp-1099287947809.us-central1.run.app/lifesavers")
       .then(res => res.json())
       .then(data => {
         lifesavers = data;
