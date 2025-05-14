@@ -41,7 +41,7 @@
   let markers = [];
   let lifesavers = [];
   let myLat = null;
-  let myLon = null;
+  let myLng = null;
   let myLocationMarker = null;
   const infoWindow = new naver.maps.InfoWindow();
 
@@ -49,8 +49,8 @@
     if (navigator.geolocation) {
       navigator.geolocation.watchPosition(function(position) {
         myLat = position.coords.latitude;
-        myLon = position.coords.longitude;
-        const myLocation = new naver.maps.LatLng(myLat, myLon);
+        myLng = position.coords.longitude;
+        const myLocation = new naver.maps.LatLng(myLat, myLng);
 
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
@@ -95,12 +95,12 @@
             markers.push(marker);
 
             naver.maps.Event.addListener(marker, 'click', function () {
-              if (myLat === null || myLon === null) {
+              if (myLat === null || myLng === null) {
                 alert('현재 위치를 가져올 수 없습니다.');
                 return;
               }
 
-              const nmapUrl = `nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=com.example.app`;
+              const nmapUrl = `nmap://route/car?slat=${myLat}&slng=${myLng}&dlat=${item.lat}&dlng=${item.lng}&appname=com.example.app`;
 
               const iwContent = `
                 <div style="padding:6px; font-size:13px;">
@@ -144,14 +144,13 @@
 
   naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
 
-  // ✅ 처음 페이지 로드 시 내 위치로 확대
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(position) {
       myLat = position.coords.latitude;
-      myLon = position.coords.longitude;
-      const myLocation = new naver.maps.LatLng(myLat, myLon);
+      myLng = position.coords.longitude;
+      const myLocation = new naver.maps.LatLng(myLat, myLng);
       map.setCenter(myLocation);
-      map.setZoom(17); // ✅ 줌 확대 필수
+      map.setZoom(17);
     });
   }
 
@@ -159,10 +158,10 @@
   loadMarkers();
 
   document.getElementById('locationButton').addEventListener('click', function () {
-    if (myLat && myLon) {
-      const center = new naver.maps.LatLng(myLat, myLon);
+    if (myLat && myLng) {
+      const center = new naver.maps.LatLng(myLat, myLng);
       map.setCenter(center);
-      map.setZoom(17); // ✅ 버튼 눌렀을 때도 줌 확대 유지
+      map.setZoom(17);
     }
   });
 
