@@ -1,19 +1,10 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import json
 
 app = FastAPI()
 
-# CORS (선택적으로 도메인 제한)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
-
-# ✅ lifesavers 먼저 정의
+# ✅ 먼저 /lifesavers 라우터를 선언
 @app.get("/lifesavers")
 def get_lifesavers():
     try:
@@ -22,5 +13,5 @@ def get_lifesavers():
     except Exception as e:
         return {"error": str(e)}
 
-# ✅ 그 다음에 static mount
+# ✅ 그 다음에 정적 파일 마운트
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
