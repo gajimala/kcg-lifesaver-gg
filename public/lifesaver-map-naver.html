@@ -38,8 +38,6 @@
     mapTypeId: naver.maps.MapTypeId.NORMAL
   });
 
-  let markers = [];
-  let lifesavers = [];
   let myLat = null;
   let myLng = null;
   let myLocationMarker = null;
@@ -77,9 +75,7 @@
     fetch("/lifesavers")
       .then(res => res.json())
       .then(data => {
-        lifesavers = data;
-
-        lifesavers.forEach(item => {
+        data.forEach(item => {
           if (item.lat && item.lng) {
             const marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(item.lat, item.lng),
@@ -91,8 +87,6 @@
                 anchor: new naver.maps.Point(20, 45)
               }
             });
-
-            markers.push(marker);
 
             naver.maps.Event.addListener(marker, 'click', function () {
               if (myLat === null || myLng === null) {
@@ -116,33 +110,11 @@
             });
           }
         });
-
-        updateMarkers();
       })
       .catch(err => {
         console.error("lifesavers.json 불러오기 오류:", err);
       });
   }
-
-  function updateMarkers() {
-    if (lifesavers.length === 0) return;
-
-    const bounds = map.getBounds();
-    const sw = bounds.getSW();
-    const ne = bounds.getNE();
-
-    markers.forEach((marker, index) => {
-      const item = lifesavers[index];
-      if (item.lat >= sw._lat && item.lat <= ne._lat &&
-          item.lng >= sw._lng && item.lng <= ne._lng) {
-        marker.setMap(map);
-      } else {
-        marker.setMap(null);
-      }
-    });
-  }
-
-  naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(position) {
