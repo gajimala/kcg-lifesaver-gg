@@ -5,28 +5,22 @@ import json
 
 app = FastAPI()
 
-# ✅ CORS 정확하게 설정
-origins = [
-    "https://kcghelp-1099287947809.us-central1.run.app"
-]
-
+# CORS (선택적으로 도메인 제한)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
-# ✅ 정적파일 서빙 (HTML, JS, 아이콘)
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
-
-# ✅ lifesavers.json API 서빙
+# ✅ lifesavers 먼저 정의
 @app.get("/lifesavers")
 def get_lifesavers():
     try:
         with open("public/lifesavers.json", encoding="utf-8") as f:
-            data = json.load(f)
-        return data
+            return json.load(f)
     except Exception as e:
         return {"error": str(e)}
+
+# ✅ 그 다음에 static mount
+app.mount("/", StaticFiles(directory="public", html=True), name="static")
