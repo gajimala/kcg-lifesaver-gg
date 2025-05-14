@@ -15,6 +15,7 @@
       background: rgba(255, 255, 255, 0.9);
       border: 1px solid #ccc;
       border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
       font-size: 14px;
       cursor: pointer;
     }
@@ -70,8 +71,6 @@
         enableHighAccuracy: true,
         maximumAge: 0
       });
-    } else {
-      console.error("Geolocation 미지원");
     }
   }
 
@@ -82,16 +81,12 @@
         lifesavers = data;
 
         lifesavers.forEach(item => {
-          if (item.lat && item.lng) {
+          if (typeof item.lat === "number" && typeof item.lng === "number") {
             const marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(item.lat, item.lng),
               map: map,
-              title: item.name || "인명구조함",
-              icon: {
-                url: "/lifesaver-icon.png",
-                size: new naver.maps.Size(40, 45),
-                anchor: new naver.maps.Point(20, 45)
-              }
+              title: item.name || "인명구조함"
+              // 🔥 icon 제거하여 마커 정상 표시
             });
 
             marker.item = item;
@@ -147,15 +142,13 @@
 
   naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
 
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      myLat = position.coords.latitude;
-      myLon = position.coords.longitude;
-      const myLocation = new naver.maps.LatLng(myLat, myLon);
-      map.setCenter(myLocation);
-      map.setZoom(11);
-    });
-  }
+  navigator.geolocation.getCurrentPosition(function(position) {
+    myLat = position.coords.latitude;
+    myLon = position.coords.longitude;
+    const myLocation = new naver.maps.LatLng(myLat, myLon);
+    map.setCenter(myLocation);
+    map.setZoom(11);
+  });
 
   startTracking();
   loadMarkers();
