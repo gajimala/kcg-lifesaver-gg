@@ -15,7 +15,6 @@
       background: rgba(255, 255, 255, 0.9);
       border: 1px solid #ccc;
       border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
       font-size: 14px;
       cursor: pointer;
     }
@@ -81,15 +80,18 @@
         lifesavers = data;
 
         lifesavers.forEach(item => {
-          if (typeof item.lat === "number" && typeof item.lng === "number") {
+          if (item.lat && item.lng) {
             const marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(item.lat, item.lng),
               map: map,
-              title: item.name || "인명구조함"
-              // 🔥 icon 제거하여 마커 정상 표시
+              title: item.name || "인명구조함",
+              icon: {
+                url: "/lifesaver-icon.png",
+                size: new naver.maps.Size(40, 45),
+                anchor: new naver.maps.Point(20, 45)
+              }
             });
 
-            marker.item = item;
             markers.push(marker);
 
             naver.maps.Event.addListener(marker, 'click', function () {
@@ -142,13 +144,16 @@
 
   naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
 
-  navigator.geolocation.getCurrentPosition(function(position) {
-    myLat = position.coords.latitude;
-    myLon = position.coords.longitude;
-    const myLocation = new naver.maps.LatLng(myLat, myLon);
-    map.setCenter(myLocation);
-    map.setZoom(11);
-  });
+  // ✅ 처음 페이지 로드 시 내 위치로 확대
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      myLat = position.coords.latitude;
+      myLon = position.coords.longitude;
+      const myLocation = new naver.maps.LatLng(myLat, myLon);
+      map.setCenter(myLocation);
+      map.setZoom(17); // ✅ 줌 확대 필수
+    });
+  }
 
   startTracking();
   loadMarkers();
@@ -157,7 +162,7 @@
     if (myLat && myLon) {
       const center = new naver.maps.LatLng(myLat, myLon);
       map.setCenter(center);
-      map.setZoom(11);
+      map.setZoom(17); // ✅ 버튼 눌렀을 때도 줌 확대 유지
     }
   });
 
