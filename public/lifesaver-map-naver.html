@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>인명구조함 지도 (네이버 앱용)</title>
+  <title>인명구조함 지도 (네이버)</title>
   <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
@@ -32,59 +32,25 @@
 <button id="mapTypeSelector">위성 지도</button>
 
 <script>
-  var map = new naver.maps.Map('map', {
-    center: new naver.maps.LatLng(37.5665, 126.9780),
-    zoom: 17,
+  const map = new naver.maps.Map('map', {
+    center: new naver.maps.LatLng(37.75, 128.9),
+    zoom: 9,
     mapTypeId: naver.maps.MapTypeId.NORMAL
   });
 
-  var markers = [];
-  var lifesavers = [];
-  var myLocationMarker = null;
-  var myLat = null;
-  var myLon = null;
-  var watchId = null;
-  var infoWindow = new naver.maps.InfoWindow();
-
-  function getLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        myLat = position.coords.latitude;
-        myLon = position.coords.longitude;
-        var myLocation = new naver.maps.LatLng(myLat, myLon);
-
-        map.setCenter(myLocation);
-        map.setZoom(17);
-
-        if (myLocationMarker) {
-          myLocationMarker.setPosition(myLocation);
-        } else {
-          myLocationMarker = new naver.maps.Marker({
-            position: myLocation,
-            map: map,
-            icon: {
-              content: '<div style="width:12px; height:12px; background:#4285F4; border-radius:50%; border:2px solid white;"></div>',
-              anchor: new naver.maps.Point(6, 6)
-            }
-          });
-        }
-      }, function(error) {
-        console.error("위치 추적 실패:", error);
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 0
-      });
-    } else {
-      console.error("Geolocation 미지원");
-    }
-  }
+  let markers = [];
+  let lifesavers = [];
+  let myLat = null;
+  let myLon = null;
+  let myLocationMarker = null;
+  const infoWindow = new naver.maps.InfoWindow();
 
   function startTracking() {
     if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(function(position) {
+      navigator.geolocation.watchPosition(function(position) {
         myLat = position.coords.latitude;
         myLon = position.coords.longitude;
-        var myLocation = new naver.maps.LatLng(myLat, myLon);
+        const myLocation = new naver.maps.LatLng(myLat, myLon);
 
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
@@ -93,7 +59,7 @@
             position: myLocation,
             map: map,
             icon: {
-              content: '<div style="width:12px; height:12px; background:#4285F4; border-radius:50%; border:2px solid white;"></div>',
+              content: '<div style="width:12px;height:12px;background:#4285F4;border-radius:50%;border:2px solid white;"></div>',
               anchor: new naver.maps.Point(6, 6)
             }
           });
@@ -110,36 +76,36 @@
   }
 
   function loadMarkers() {
-    fetch("https://lifesaver-api-1099287947809.asia-northeast3.run.app/lifesavers")
-      .then(function(response) { return response.json(); })
-      .then(function(data) {
+    fetch("lifesavers.json")
+      .then(res => res.json())
+      .then(data => {
         lifesavers = data;
-        data.forEach(function(item) {
+
+        lifesavers.forEach(item => {
           if (item.lat && item.lng) {
-            var marker = new naver.maps.Marker({
+            const marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(item.lat, item.lng),
               map: map,
               title: item.name || "인명구조함",
               icon: {
                 url: "/lifesaver-icon.png",
-                size: new naver.maps.Size(27, 30),
-                scaledSize: new naver.maps.Size(27, 30),
-                origin: new naver.maps.Point(0, 0),
-                anchor: new naver.maps.Point(13, 30)
+                size: new naver.maps.Size(40, 45),
+                anchor: new naver.maps.Point(20, 45)
               }
             });
+
+            marker.item = item;
             markers.push(marker);
 
-            naver.maps.Event.addListener(marker, 'click', function() {
+            naver.maps.Event.addListener(marker, 'click', function () {
               if (myLat === null || myLon === null) {
                 alert('현재 위치를 가져올 수 없습니다.');
                 return;
               }
 
-              var appname = 'com.example.app';
-              var nmapUrl = `nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=${appname}`;
+              const nmapUrl = `nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=com.example.app`;
 
-              var iwContent = ` 
+              const iwContent = `
                 <div style="padding:6px; font-size:13px;">
                   ${item.name || "인명구조함"}<br>
                   <button onclick="window.location.href='${nmapUrl}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
@@ -156,20 +122,20 @@
 
         updateMarkers();
       })
-      .catch(function(error) {
-        console.error('lifesavers.json 불러오기 오류:', error);
+      .catch(err => {
+        console.error("lifesavers.json 불러오기 오류:", err);
       });
   }
 
   function updateMarkers() {
     if (lifesavers.length === 0) return;
 
-    var bounds = map.getBounds();
-    var sw = bounds.getSW();
-    var ne = bounds.getNE();
+    const bounds = map.getBounds();
+    const sw = bounds.getSW();
+    const ne = bounds.getNE();
 
-    markers.forEach(function(marker, index) {
-      var item = lifesavers[index];
+    markers.forEach((marker, index) => {
+      const item = lifesavers[index];
       if (item.lat >= sw._lat && item.lat <= ne._lat &&
           item.lng >= sw._lng && item.lng <= ne._lng) {
         marker.setMap(map);
@@ -181,19 +147,28 @@
 
   naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
 
-  getLocation();
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      myLat = position.coords.latitude;
+      myLon = position.coords.longitude;
+      const myLocation = new naver.maps.LatLng(myLat, myLon);
+      map.setCenter(myLocation);
+      map.setZoom(11);
+    });
+  }
+
   startTracking();
   loadMarkers();
 
-  document.getElementById('locationButton').addEventListener('click', function() {
+  document.getElementById('locationButton').addEventListener('click', function () {
     if (myLat && myLon) {
       const center = new naver.maps.LatLng(myLat, myLon);
       map.setCenter(center);
-      map.setZoom(17);
+      map.setZoom(11);
     }
   });
 
-  document.getElementById('mapTypeSelector').addEventListener('click', function() {
+  document.getElementById('mapTypeSelector').addEventListener('click', function () {
     if (map.getMapTypeId() === naver.maps.MapTypeId.SATELLITE) {
       map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
       this.textContent = '위성 지도';
