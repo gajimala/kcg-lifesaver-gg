@@ -5,7 +5,7 @@ import json
 
 app = FastAPI()
 
-# ✅ CORS
+# ✅ 정확한 도메인만 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://kcghelp-1099287947809.us-central1.run.app"],
@@ -14,10 +14,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# ✅ ✅ 정적 파일을 먼저 마운트 (순서 중요)
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
-
-# ✅ lifesavers 라우트는 반드시 그 뒤에 정의해야 작동 보장됨
+# ✅ lifesavers 먼저 선언
 @app.get("/lifesavers")
 def get_lifesavers():
     try:
@@ -25,3 +22,6 @@ def get_lifesavers():
             return json.load(f)
     except Exception as e:
         return {"error": str(e)}
+
+# ✅ 마지막에 정적 파일 mount
+app.mount("/", StaticFiles(directory="public", html=True), name="static")
