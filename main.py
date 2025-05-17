@@ -8,7 +8,7 @@ app = FastAPI()
 # ✅ 정확한 도메인만 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://kcghelp-1099287947809.us-central1.run.app"],
+    allow_origins=["https://kcg-1099287947809.us-central1.run.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
