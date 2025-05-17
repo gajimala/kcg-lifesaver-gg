@@ -80,11 +80,6 @@ const lifesavers = [{"lat": 34.74668503, "lng": 127.668296799999}, {"lat": 36.77
         position: new naver.maps.LatLng(item.lat, item.lng),
         map: map,
         title: item.name || "인명구조함",
-        icon: {
-          url: "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
-          size: new naver.maps.Size(40, 45),
-          anchor: new naver.maps.Point(20, 45)
-        }
       });
 
       markers.push(marker);
