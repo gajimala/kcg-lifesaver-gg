@@ -73,11 +73,11 @@
   }
 
   function loadMarkers() {
-    fetch("https://kcghelp-1099287947809.us-central1.run.app/lifesavers")
+    fetch("/lifesavers")
       .then(res => res.json())
       .then(data => {
         data.forEach(item => {
-          if (item.lat && item.lng) {
+          if (item.lat !== undefined && item.lng !== undefined) {
             const marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(item.lat, item.lng),
               map: map,
@@ -114,13 +114,34 @@
           }
         });
 
-        // 초기 로딩 시 모든 마커 표시
-        markers.forEach(marker => marker.setMap(map));
+        updateMarkers();
       })
       .catch(err => {
         console.error("lifesavers.json 불러오기 오류:", err);
       });
   }
+
+  function updateMarkers() {
+    if (!markers.length) return;
+
+    const bounds = map.getBounds();
+    const sw = bounds.getSW();
+    const ne = bounds.getNE();
+
+    markers.forEach((marker) => {
+      const position = marker.getPosition();
+      const lat = position.lat();
+      const lng = position.lng();
+
+      if (lat >= sw.lat() && lat <= ne.lat() && lng >= sw.lng() && lng <= ne.lng()) {
+        marker.setMap(map);
+      } else {
+        marker.setMap(null);
+      }
+    });
+  }
+
+  naver.maps.Event.addListener(map, 'bounds_changed', updateMarkers);
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(position) {
@@ -144,13 +165,12 @@
   });
 
   document.getElementById('mapTypeSelector').addEventListener('click', function () {
-    const currentType = map.getMapTypeId();
-    if (currentType === naver.maps.MapTypeId.NORMAL) {
-      map.setMapTypeId(naver.maps.MapTypeId.SATELLITE);
-      this.textContent = '일반 지도';
-    } else {
+    if (map.getMapTypeId() === naver.maps.MapTypeId.SATELLITE) {
       map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
       this.textContent = '위성 지도';
+    } else {
+      map.setMapTypeId(naver.maps.MapTypeId.SATELLITE);
+      this.textContent = '일반 지도';
     }
   });
 </script>
