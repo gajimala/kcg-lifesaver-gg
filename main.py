@@ -1,27 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 import json
+from google.cloud import storage
 
 app = FastAPI()
 
-# ✅ 정확한 도메인만 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://kcghelp-1099287947809.us-central1.run.app"],
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
-# ✅ lifesavers 먼저 선언
 @app.get("/lifesavers")
 def get_lifesavers():
-    try:
-        with open("public/lifesavers.json", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        return {"error": str(e)}
+    client = storage.Client()
+    bucket = client.bucket("kcg-lifesaver-json")  # ← 여기를 네 실제 버킷 이름으로 바꿔
+    blob = bucket.blob("lifesavers.json")
 
-# ✅ 마지막에 정적 파일 mount
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
+    data = blob.download_as_text(encoding="utf-8")
+    return json.loads(data)
