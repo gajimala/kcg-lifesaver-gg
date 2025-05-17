@@ -25,3 +25,6 @@ def get_lifesavers():
 
 # ✅ 마지막에 정적 파일 mount
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
+import os
+print("🔥 index.html exists:", os.path.exists("public/index.html"))
+
