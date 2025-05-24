@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse  # ✅ index.html 반환용
 import json
 import os
 import time
-
+ 
 router = APIRouter()
 
 # 구조 요청 저장 경로
