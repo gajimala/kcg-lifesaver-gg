@@ -1,25 +1,25 @@
 from fastapi import APIRouter
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from fastapi.responses import FileResponse  # ✅ index.html 반환용
 import json
 import os
 import time
- 
+
 router = APIRouter()
 
 # 구조 요청 저장 경로
 REQUESTS_FILE = "public/emergency/public/requests.json"
-
-# ✅ index.html 반환 라우터 추가
-@router.get("/")
-def emergency_root():
-    return FileResponse("public/emergency/public/index.html")
 
 # 요청 모델
 class HelpRequest(BaseModel):
     lat: float
     lng: float
     timestamp: float  # ms 단위
+
+# 🔥 /emergency/ 접속 시 index.html 반환 (핵심!)
+@router.get("/")
+def emergency_root():
+    return FileResponse("public/emergency/public/index.html")
 
 # 구조 요청 기록 저장
 @router.post("/request-help")
