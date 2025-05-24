@@ -105,7 +105,7 @@
   }
 
   function loadMarkers() {
-    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
+    fetch("lifesavers.json")
       .then(res => res.json())
       .then(data => {
         lifesavers = data;
