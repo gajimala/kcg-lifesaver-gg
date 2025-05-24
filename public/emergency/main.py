@@ -1,22 +1,22 @@
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+from fastapi import APIRouter
+from pydantic import BaseModel
 import json
 import os
 import time
-from pydantic import BaseModel
 
-app = FastAPI()
+router = APIRouter()
 
-REQUESTS_FILE = "public/emergency/public/requests.json"  # 구조요청 저장 파일 위치 변경
+# 구조 요청 저장 경로
+REQUESTS_FILE = "public/emergency/public/requests.json"
 
-# 요청 모델 (lng로 통일)
+# 요청 모델
 class HelpRequest(BaseModel):
     lat: float
     lng: float
     timestamp: float  # ms 단위
 
-# 구조 요청 기록
-@app.post("/request-help")
+# 구조 요청 기록 저장
+@router.post("/request-help")
 def request_help(data: HelpRequest):
     try:
         if not os.path.exists(REQUESTS_FILE):
@@ -41,26 +41,10 @@ def request_help(data: HelpRequest):
         return {"status": "error", "message": str(e)}
 
 # 구조 요청 전체 확인
-@app.get("/requests")
+@router.get("/requests")
 def get_requests():
     try:
         with open(REQUESTS_FILE, encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
-# lifesavers.json 반환 (밖에 있는 json 사용)
-@app.get("/lifesavers")
-def get_lifesavers():
-    try:
-        with open("public/lifesavers.json", encoding="utf-8") as f:
-            data = json.load(f)
-        return data
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-# 정적 파일 서빙 (루트 경로용)
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
-
-# emergency 경로로 이머전시 관련 파일 서빙
-app.mount("/emergency", StaticFiles(directory="public/emergency/public"), name="emergency_static")
