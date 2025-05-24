@@ -140,7 +140,7 @@
   }
 
   function loadMarkers() {
-    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
+    fetch("lifesavers")
       .then(function(response) { return response.json(); })
       .then(function(data) {
         lifesavers = data;
