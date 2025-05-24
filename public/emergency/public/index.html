@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>인명구조함 지도 선택</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: url('lifesaver-icon.png') no-repeat center top;
+      background-size: 400px auto;
+      background-color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      font-family: sans-serif;
+    }
+
+    .buttons {
+      margin-bottom: 40px;
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+
+    .buttons a {
+      text-decoration: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background-color: white;
+      color: #333;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: background-color 0.2s;
+    }
+
+    .buttons a:hover {
+      background-color: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="buttons">
+    <a href="lifesaver-map-naver.html">네이버 지도 보기</a>
+    <a href="lifesaver-map-kakao.html">카카오 지도 보기</a>
+  </div>
+
+</body>
+</html>
