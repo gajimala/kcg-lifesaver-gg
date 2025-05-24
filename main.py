@@ -5,6 +5,9 @@ from fastapi.responses import FileResponse
 import json
 import os
 
+# 👉 emergency 라우터 불러오기
+from emergency.main import router as emergency_router
+
 app = FastAPI()
 
 # ✅ 정확한 도메인만 허용
@@ -25,10 +28,13 @@ def get_lifesavers():
     except Exception as e:
         return {"error": str(e)}
 
-# ✅ 루트 경로에 index.html 직접 바인딩 (💥 핵심)
+# ✅ 루트 경로에 index.html 직접 바인딩
 @app.get("/")
 def root():
     return FileResponse("public/index.html")
 
-# ✅ 정적 파일 전체 mount
+# ✅ 정적 파일 mount (lifesaver 맵용)
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
+
+# ✅ emergency 라우트 포함
+app.include_router(emergency_router, prefix="/emergency")
