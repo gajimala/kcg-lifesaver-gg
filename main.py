@@ -1,52 +1,63 @@
 import json
-import os
 import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
+# [변경] Google Cloud Storage 라이브러리 임포트
+from google.cloud import storage
+
 # FastAPI 앱 생성
 app = FastAPI()
 
 # CORS 미들웨어 추가
-# - 브라우저에서 다른 도메인 또는 포트로 API 요청 시 차단되는 문제 방지
-# - 현재는 모든 도메인(*)에서 요청을 허용하지만, 배포 시에는 필요한 도메인만 허용할 것
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # 모든 도메인 허용
-    allow_credentials=True,   # 쿠키, 인증정보 허용 여부
-    allow_methods=["*"],      # 모든 HTTP 메서드 허용 (GET, POST 등)
-    allow_headers=["*"],      # 모든 헤더 허용
+    allow_origins=["*"],      
+    allow_credentials=True,   
+    allow_methods=["*"],      
+    allow_headers=["*"],      
 )
 
-# 구조 요청 데이터를 저장할 파일 경로 (리눅스 /tmp 디렉터리 사용)
-REQUESTS_FILE = "/data/requests.json"
+# [변경] 로컬 파일 경로 대신 GCS 버킷명과 객체명 지정
+BUCKET_NAME = "네이버버킷명"   # 본인 GCS 버킷 이름으로 바꿔야 함
+REQUESTS_BLOB_NAME = "requests.json"
+LIFESAVERS_BLOB_NAME = "lifesavers.json"
+
+# [변경] GCS 클라이언트 및 버킷 객체 생성
+storage_client = storage.Client()
+bucket = storage_client.bucket(BUCKET_NAME)
 
 # 구조 요청 데이터 모델 정의
-# - 클라이언트에서 받는 JSON 데이터가 이 형식이어야 함
 class HelpRequest(BaseModel):
-    lat: float          # 위도
-    lng: float          # 경도 (lng로 통일)
-    timestamp: float    # 요청 시각 (밀리초 단위)
+    lat: float
+    lng: float
+    timestamp: float
 
-# POST /requests
-# - 새로운 구조 요청 데이터를 받아서 저장
+# [변경] GCS에서 requests.json 읽기 함수
+def read_requests_from_gcs():
+    blob = bucket.blob(REQUESTS_BLOB_NAME)
+    if not blob.exists():
+        return []
+    data = blob.download_as_text()
+    return json.loads(data)
+
+# [변경] GCS에 requests.json 쓰기 함수
+def write_requests_to_gcs(data):
+    blob = bucket.blob(REQUESTS_BLOB_NAME)
+    blob.upload_from_string(json.dumps(data, ensure_ascii=False, indent=2))
+
+# POST /requests - 새 구조 요청 저장
 @app.post("/requests")
 def request_help(data: HelpRequest):
     try:
-        # 요청 저장 파일이 없으면 빈 배열로 생성
-        if not os.path.exists(REQUESTS_FILE):
-            with open(REQUESTS_FILE, "w", encoding="utf-8") as f:
-                json.dump([], f)
+        # GCS에서 기존 요청 불러오기
+        requests = read_requests_from_gcs()
 
-        # 기존 요청 기록 불러오기
-        with open(REQUESTS_FILE, "r", encoding="utf-8") as f:
-            requests = json.load(f)
-
-        now = time.time() * 1000  # 현재 시각 (밀리초 단위)
+        now = time.time() * 1000
         
-        # 24시간 이내 요청만 필터링하여 보관 (오래된 데이터 자동 삭제)
+        # 24시간 이내 요청만 필터링
         recent_requests = [
             r for r in requests if now - r.get("timestamp", 0) < 86400000
         ]
@@ -54,39 +65,32 @@ def request_help(data: HelpRequest):
         # 새 요청 추가
         recent_requests.append(data.dict())
 
-        # 다시 파일에 저장 (indent=2 로 읽기 쉽게 저장)
-        with open(REQUESTS_FILE, "w", encoding="utf-8") as f:
-            json.dump(recent_requests, f, ensure_ascii=False, indent=2)
+        # GCS에 저장
+        write_requests_to_gcs(recent_requests)
 
-        # 성공 응답, 현재 저장된 요청 개수 반환
         return {"status": "ok", "count": len(recent_requests)}
-
     except Exception as e:
-        # 예외 발생 시 에러 메시지 반환
         return {"status": "error", "message": str(e)}
 
-# GET /requests
-# - 저장된 구조 요청 전체 목록 반환
+# GET /requests - 저장된 요청 전체 반환
 @app.get("/requests")
 def get_requests():
     try:
-        with open(REQUESTS_FILE, encoding="utf-8") as f:
-            return json.load(f)
+        return read_requests_from_gcs()
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# GET /lifesavers
-# - lifesavers.json 파일 데이터 반환 (구조함 위치 등 정보)
+# [변경] GET /lifesavers - lifesavers.json GCS에서 읽기
 @app.get("/lifesavers")
 def get_lifesavers():
     try:
-        with open("public/lifesavers.json", encoding="utf-8") as f:
-            data = json.load(f)
-        return data
+        blob = bucket.blob(LIFESAVERS_BLOB_NAME)
+        if not blob.exists():
+            return {"status": "error", "message": "lifesavers.json not found"}
+        data = blob.download_as_text()
+        return json.loads(data)
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# 정적 파일 서빙 (HTML, JS, CSS 등)
-# - public 폴더 내 정적파일 제공
-# - '/' 경로에서 index.html 등 열림
+# 정적 파일 서빙 (로컬 public 폴더 그대로)
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
