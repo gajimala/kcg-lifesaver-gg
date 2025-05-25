@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # 구조 요청 데이터를 저장할 파일 경로 (리눅스 /tmp 디렉터리 사용)
-REQUESTS_FILE = "/tmp/requests.json"
+REQUESTS_FILE = "/data/requests.json"
 
 # 구조 요청 데이터 모델 정의
 # - 클라이언트에서 받는 JSON 데이터가 이 형식이어야 함
