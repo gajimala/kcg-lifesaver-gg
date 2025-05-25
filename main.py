@@ -16,7 +16,7 @@ class HelpRequest(BaseModel):
     timestamp: float  # ms 단위
 
 # 구조 요청 기록
-@app.post("/request-help")
+@app.post("/requests")
 def request_help(data: HelpRequest):
     try:
         if not os.path.exists(REQUESTS_FILE):
