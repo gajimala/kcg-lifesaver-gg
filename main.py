@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-# [변경] Google Cloud Storage 라이브러리 임포트
+# Google Cloud Storage 라이브러리 임포트
 from google.cloud import storage
 
 # FastAPI 앱 생성
@@ -20,12 +20,12 @@ app.add_middleware(
     allow_headers=["*"],      
 )
 
-# [변경] 로컬 파일 경로 대신 GCS 버킷명과 객체명 지정
-BUCKET_NAME = "네이버버킷명"   # 본인 GCS 버킷 이름으로 바꿔야 함
+# GCS 버킷명과 객체명 지정
+BUCKET_NAME = "lifesaver-requests"   # 네가 알려준 실제 버킷 이름
 REQUESTS_BLOB_NAME = "requests.json"
 LIFESAVERS_BLOB_NAME = "lifesavers.json"
 
-# [변경] GCS 클라이언트 및 버킷 객체 생성
+# GCS 클라이언트 및 버킷 객체 생성
 storage_client = storage.Client()
 bucket = storage_client.bucket(BUCKET_NAME)
 
@@ -35,7 +35,7 @@ class HelpRequest(BaseModel):
     lng: float
     timestamp: float
 
-# [변경] GCS에서 requests.json 읽기 함수
+# GCS에서 requests.json 읽기 함수
 def read_requests_from_gcs():
     blob = bucket.blob(REQUESTS_BLOB_NAME)
     if not blob.exists():
@@ -43,7 +43,7 @@ def read_requests_from_gcs():
     data = blob.download_as_text()
     return json.loads(data)
 
-# [변경] GCS에 requests.json 쓰기 함수
+# GCS에 requests.json 쓰기 함수
 def write_requests_to_gcs(data):
     blob = bucket.blob(REQUESTS_BLOB_NAME)
     blob.upload_from_string(json.dumps(data, ensure_ascii=False, indent=2))
@@ -80,7 +80,7 @@ def get_requests():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# [변경] GET /lifesavers - lifesavers.json GCS에서 읽기
+# GET /lifesavers - lifesavers.json GCS에서 읽기
 @app.get("/lifesavers")
 def get_lifesavers():
     try:
