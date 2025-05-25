@@ -60,4 +60,4 @@ def get_lifesavers():
         return {"status": "error", "message": str(e)}
 
 # 정적 파일 서빙 (맨 마지막에 위치해야 함)
-app.mount("/static", StaticFiles(directory="public"), name="static")
+app.mount("/", StaticFiles(directory="public", html=True), name="static")
