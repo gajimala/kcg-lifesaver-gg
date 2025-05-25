@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
-REQUESTS_FILE = "public/requests.json"  # 구조요청 저장 파일
+REQUESTS_FILE = "/tmp/requests.json"  # 구조요청 저장 파일
 
 # 요청 모델 (lng로 통일)
 class HelpRequest(BaseModel):
