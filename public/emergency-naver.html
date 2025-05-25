@@ -140,7 +140,7 @@
   }
 
   function loadMarkers() {
-    fetch("lifesavers")
+    fetch("/lifesavers")
       .then(function(response) { return response.json(); })
       .then(function(data) {
         lifesavers = data;
@@ -237,7 +237,7 @@
       const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
       if (!agree) return;
 
-      fetch("https://gangneung-lifesaver-api.onrender.com/request-help", {
+      fetch("https://kcg-1099287947809.us-central1.run.app/requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
