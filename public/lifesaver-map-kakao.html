@@ -45,6 +45,7 @@
   let myLon = null;
   let myLocationMarker = null;
   let infoWindow = new kakao.maps.InfoWindow();
+  let clusterer = null;  // 클러스터러 변수
 
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
@@ -79,7 +80,7 @@
   }
 
   function loadMarkers() {
-    fetch("lifesavers.json")  // ✅ 여기만 수정됨
+    fetch("lifesavers.json")
       .then(res => res.json())
       .then(data => {
         lifesavers = data;
@@ -96,7 +97,7 @@
               )
             });
             
-            marker.item = item; // ✅ 이거 추가
+            marker.item = item;
             markers.push(marker);
 
             kakao.maps.event.addListener(marker, 'click', function () {
@@ -116,6 +117,33 @@
         });
 
         updateMarkers();
+
+        // 클러스터러 생성 및 마커 등록
+        if (!clusterer) {
+          clusterer = new kakao.maps.MarkerClusterer({
+            map: map,
+            averageCenter: true,
+            minLevel: 7,
+            disableClickZoom: false,
+            styles: [{
+              width: '40px',
+              height: '40px',
+              background: 'rgba(255, 100, 100, 0.7)',
+              color: '#fff',
+              borderRadius: '20px',
+              textAlign: 'center',
+              lineHeight: '40px',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              border: '2px solid white',
+              boxShadow: '0 0 5px rgba(0,0,0,0.5)'
+            }]
+          });
+        } else {
+          clusterer.clear();
+        }
+        clusterer.addMarkers(markers);
+
       })
       .catch(error => {
         console.error('lifesavers.json 불러오기 오류:', error);
