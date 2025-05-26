@@ -45,7 +45,7 @@
   let myLon = null;
   let myLocationMarker = null;
   let infoWindow = new kakao.maps.InfoWindow();
-  let clusterer = null;  // 클러스터러 변수
+  let clusterer = null;
 
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
@@ -96,7 +96,7 @@
                 { offset: new kakao.maps.Point(20, 45) }
               )
             });
-            
+
             marker.item = item;
             markers.push(marker);
 
@@ -118,7 +118,6 @@
 
         updateMarkers();
 
-        // 클러스터러 생성 및 마커 등록
         if (!clusterer) {
           clusterer = new kakao.maps.MarkerClusterer({
             map: map,
@@ -142,35 +141,41 @@
         } else {
           clusterer.clear();
         }
-        clusterer.addMarkers(markers);
 
+        // 클러스터에 마커 추가 (처음 전체 다 추가하고 이후엔 updateMarkers에서 관리)
+        clusterer.addMarkers(markers);
       })
       .catch(error => {
         console.error('lifesavers.json 불러오기 오류:', error);
       });
   }
 
-  // ✅ 수정된 부분 (updateMarkers 함수만 변경됨)
+  // ✅ 클러스터러 기반 updateMarkers (지도 범위 내 마커만 보여줌)
   function updateMarkers() {
-    if (markers.length === 0) return;
+    if (!clusterer || markers.length === 0) return;
 
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
 
-    markers.forEach(marker => {
-      const position = marker.getPosition();
-      const lat = position.getLat();
-      const lng = position.getLng();
+    const visibleMarkers = [];
 
-      if (lat >= sw.getLat() && lat <= ne.getLat() &&
-          lng >= sw.getLng() && lng <= ne.getLng()) {
-        marker.setMap(map);
-      } else {
-        marker.setMap(null);
+    markers.forEach(marker => {
+      const pos = marker.getPosition();
+      if (pos.getLat() >= sw.getLat() && pos.getLat() <= ne.getLat() &&
+          pos.getLng() >= sw.getLng() && pos.getLng() <= ne.getLng()) {
+        visibleMarkers.push(marker);
       }
     });
+
+    clusterer.clear();
+    clusterer.addMarkers(visibleMarkers);
   }
+
+  // ✅ 지도 클릭 시 열린 정보창 닫기
+  kakao.maps.event.addListener(map, 'click', function () {
+    infoWindow.close();
+  });
 
   kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
 
