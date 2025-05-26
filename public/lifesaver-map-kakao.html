@@ -45,7 +45,6 @@
   let myLon = null;
   let myLocationMarker = null;
   let infoWindow = new kakao.maps.InfoWindow();
-  let clusterer = null;
 
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
@@ -80,14 +79,13 @@
   }
 
   function loadMarkers() {
-    fetch("lifesavers.json")
+    fetch("lifesavers.json")  // ✅ 여기만 수정됨
       .then(res => res.json())
       .then(data => {
         lifesavers = data;
 
         lifesavers.forEach(item => {
           if (item.lat && item.lng) {
-            // **클러스터러가 관리하도록 map 속성 제거하여 중복 마커 겹침 방지**
             const marker = new kakao.maps.Marker({
               position: new kakao.maps.LatLng(item.lat, item.lng),
               title: item.name || "인명구조함",
@@ -96,10 +94,9 @@
                 new kakao.maps.Size(40, 45),
                 { offset: new kakao.maps.Point(20, 45) }
               )
-              // map: map  <-- 제거함
             });
-
-            marker.item = item;
+            
+            marker.item = item; // ✅ 이거 추가
             markers.push(marker);
 
             kakao.maps.event.addListener(marker, 'click', function () {
@@ -113,74 +110,35 @@
                 </div>
               `;
               infoWindow.setContent(iwContent);
-              // **정보창이 마커 뒤로 안가도록 zIndex 최상위로 설정**
-              infoWindow.setZIndex(9999);
               infoWindow.open(map, marker);
             });
           }
         });
 
         updateMarkers();
-
-        if (!clusterer) {
-          clusterer = new kakao.maps.MarkerClusterer({
-            map: map,
-            averageCenter: true,
-            minLevel: 7,
-            disableClickZoom: false,
-            styles: [{
-              width: '40px',
-              height: '40px',
-              background: 'rgba(255, 100, 100, 0.7)',
-              color: '#fff',
-              borderRadius: '20px',
-              textAlign: 'center',
-              lineHeight: '40px',
-              fontWeight: 'bold',
-              fontSize: '14px',
-              border: '2px solid white',
-              boxShadow: '0 0 5px rgba(0,0,0,0.5)'
-            }]
-          });
-        } else {
-          clusterer.clear();
-        }
-
-        // 클러스터에 마커 추가 (처음 전체 다 추가하고 이후엔 updateMarkers에서 관리)
-        clusterer.addMarkers(markers);
       })
       .catch(error => {
         console.error('lifesavers.json 불러오기 오류:', error);
       });
   }
 
-  // 클러스터러 기반 updateMarkers (지도 범위 내 마커만 보여줌)
   function updateMarkers() {
-    if (!clusterer || markers.length === 0) return;
+    if (lifesavers.length === 0) return;
 
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
 
-    const visibleMarkers = [];
-
-    markers.forEach(marker => {
-      const pos = marker.getPosition();
-      if (pos.getLat() >= sw.getLat() && pos.getLat() <= ne.getLat() &&
-          pos.getLng() >= sw.getLng() && pos.getLng() <= ne.getLng()) {
-        visibleMarkers.push(marker);
+    markers.forEach((marker, index) => {
+      const item = lifesavers[index];
+      if (item.lat >= sw.getLat() && item.lat <= ne.getLat() &&
+          item.lng >= sw.getLng() && item.lng <= ne.getLng()) {
+        marker.setMap(map);
+      } else {
+        marker.setMap(null);
       }
     });
-
-    clusterer.clear();
-    clusterer.addMarkers(visibleMarkers);
   }
-
-  // 지도 클릭 시 열린 정보창 닫기 (클릭한 위치가 마커나 클러스터가 아닌 경우에만 닫기)
-  kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
-    // 마커 클릭 이벤트와 중복으로 닫히지 않도록 infoWindow 닫기 처리
-    infoWindow.close();
-  });
 
   kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
 
