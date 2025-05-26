@@ -150,17 +150,21 @@
       });
   }
 
+  // ✅ 수정된 부분 (updateMarkers 함수만 변경됨)
   function updateMarkers() {
-    if (lifesavers.length === 0) return;
+    if (markers.length === 0) return;
 
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
 
-    markers.forEach((marker, index) => {
-      const item = lifesavers[index];
-      if (item.lat >= sw.getLat() && item.lat <= ne.getLat() &&
-          item.lng >= sw.getLng() && item.lng <= ne.getLng()) {
+    markers.forEach(marker => {
+      const position = marker.getPosition();
+      const lat = position.getLat();
+      const lng = position.getLng();
+
+      if (lat >= sw.getLat() && lat <= ne.getLat() &&
+          lng >= sw.getLng() && lng <= ne.getLng()) {
         marker.setMap(map);
       } else {
         marker.setMap(null);
