@@ -87,6 +87,7 @@
 
         lifesavers.forEach(item => {
           if (item.lat && item.lng) {
+            // **클러스터러가 관리하도록 map 속성 제거하여 중복 마커 겹침 방지**
             const marker = new kakao.maps.Marker({
               position: new kakao.maps.LatLng(item.lat, item.lng),
               title: item.name || "인명구조함",
@@ -95,6 +96,7 @@
                 new kakao.maps.Size(40, 45),
                 { offset: new kakao.maps.Point(20, 45) }
               )
+              // map: map  <-- 제거함
             });
 
             marker.item = item;
@@ -111,6 +113,8 @@
                 </div>
               `;
               infoWindow.setContent(iwContent);
+              // **정보창이 마커 뒤로 안가도록 zIndex 최상위로 설정**
+              infoWindow.setZIndex(9999);
               infoWindow.open(map, marker);
             });
           }
@@ -150,7 +154,7 @@
       });
   }
 
-  // ✅ 클러스터러 기반 updateMarkers (지도 범위 내 마커만 보여줌)
+  // 클러스터러 기반 updateMarkers (지도 범위 내 마커만 보여줌)
   function updateMarkers() {
     if (!clusterer || markers.length === 0) return;
 
@@ -172,8 +176,9 @@
     clusterer.addMarkers(visibleMarkers);
   }
 
-  // ✅ 지도 클릭 시 열린 정보창 닫기
-  kakao.maps.event.addListener(map, 'click', function () {
+  // 지도 클릭 시 열린 정보창 닫기 (클릭한 위치가 마커나 클러스터가 아닌 경우에만 닫기)
+  kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+    // 마커 클릭 이벤트와 중복으로 닫히지 않도록 infoWindow 닫기 처리
     infoWindow.close();
   });
 
