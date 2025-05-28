@@ -44,6 +44,12 @@ def request_help(data: HelpRequest):
 @app.get("/requests")
 def get_requests():
     try:
+        if not os.path.exists(REQUESTS_FILE):
+            # 파일이 없으면 빈 리스트로 초기화
+            with open(REQUESTS_FILE, "w", encoding="utf-8") as f:
+                json.dump([], f)
+            return []
+
         with open(REQUESTS_FILE, encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:

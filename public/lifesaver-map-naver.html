@@ -72,20 +72,26 @@
     }
   }
 
-  function loadMarkers() {
+    function loadMarkers() {
     fetch("/lifesavers")
-      .then(res => res.json())
+      .then(response => response.json())
       .then(data => {
+        lifesavers = data;
         data.forEach(item => {
-          if (item.lat !== undefined && item.lng !== undefined) {
-            const marker = new naver.maps.Marker({
-              position: new naver.maps.LatLng(item.lat, item.lng),
+          var lat = parseFloat(item.lat);
+          var lng = parseFloat(item.lng);
+
+          if (!isNaN(lat) && !isNaN(lng)) {
+            var marker = new naver.maps.Marker({
+              position: new naver.maps.LatLng(lat, lng),
               map: map,
               title: item.name || "인명구조함",
               icon: {
                 url: "/lifesaver-icon.png",
-                size: new naver.maps.Size(40, 45),
-                anchor: new naver.maps.Point(20, 45)
+                size: new naver.maps.Size(27, 30),
+                scaledSize: new naver.maps.Size(27, 30),
+                origin: new naver.maps.Point(0, 0),
+                anchor: new naver.maps.Point(13, 30)
               }
             });
 
