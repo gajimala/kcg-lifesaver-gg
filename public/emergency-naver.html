@@ -60,6 +60,7 @@
     const app = initializeApp(firebaseConfig);    
     const database = getDatabase(app);    
 
+    // 초기 위치 (예: 강릉)
     let myLat = 37.75, myLng = 128.9;
     let map = new naver.maps.Map('map', {
       center: new naver.maps.LatLng(myLat, myLng),
@@ -144,7 +145,7 @@
             position: location,
             map: map,
             icon: {
-              url: "/hi.png",
+              url: "https://kcghelp-1099287947809.us-central1.run.app/hi.png",
               size: new naver.maps.Size(100, 100),
               origin: new naver.maps.Point(0, 0),
               anchor: new naver.maps.Point(20, 40),
@@ -160,7 +161,15 @@
           map.setZoom(17);
           firstCentered = true;
         }
+      }, err => {
+        console.error('위치 정보 수신 실패:', err);
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 5000
       });
+    } else {
+      alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
     }
 
     loadMarkers();
@@ -185,7 +194,6 @@
         .then(() => alert("구조 요청이 접수되었습니다."))
         .catch(() => alert("전송 실패: 네트워크 오류가 발생했습니다."));
     };
-
   </script>
 </body>
 </html>
