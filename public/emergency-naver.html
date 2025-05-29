@@ -144,23 +144,17 @@
 
         if (!myMarker) {
           myMarker = new naver.maps.Marker({
-            position: location,
-            map: map,
-            icon: {
-             url: HOME_PATH +"/hi.png", // 경로를 HOME_PATH로 명확히 지정
-             size: new naver.maps.Size(40, 40),
-             origin: new naver.maps.Point(0, 0),
-             anchor: new naver.maps.Point(20, 40),
-            },
-            zIndex: 1200
-          });
+          position: location,
+          map: map,
+           zIndex: 1200
+           });
         } else {
           myMarker.setPosition(location);
         }
 
         if (!firstCentered) {
           map.setCenter(location);
-          map.setZoom(13);
+          map.setZoom(7);
           firstCentered = true;
         }
       });
