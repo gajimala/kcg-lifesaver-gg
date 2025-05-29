@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -70,7 +70,6 @@
     let myMarker = null; 
     let firstCentered = false;
 
-    const markers = []; 
     const infoWindows = [];
 
     function sendSosRequest(lat, lng) {
@@ -88,7 +87,7 @@
               const marker = new naver.maps.Marker({
                 position: new naver.maps.LatLng(item.lat, item.lng),
                 icon: {
-                  url: "/help.png",
+                  url: "/help.png", // 경로 맞는지 꼭 확인
                   size: new naver.maps.Size(40, 45),
                   scaledSize: new naver.maps.Size(40, 45),
                   anchor: new naver.maps.Point(20, 45),
@@ -96,18 +95,15 @@
                 zIndex: 1000
               });
 
-              // url을 문자열로 생성 (백틱 활용)
               const url = `https://map.naver.com/v5/directions/-/141.6,37.6,,PLACE_POI/${item.lng},${item.lat},인명구조함,PLACE_POI`;
-
-              // infoWindow content는 문자열로 생성 (백틱 활용)
               const content = `
                 <div style="padding:6px; font-size:13px;">
                   인명구조함<br>
-                  <button onclick="window.location.href='${url}'" 
-                    style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                  <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
                     길찾기
                   </button>
-                </div>`;
+                </div>
+              `;
 
               const infoWindow = new naver.maps.InfoWindow({    
                 content,    
@@ -132,9 +128,9 @@
             disableClickZoom: false,
             gridSize: 120,
             icons: [{
-              content: '<div style="background: rgba(255, 100, 100, 0.8); border-radius: 50%; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;">' +
-                        '<span style="font-size: 14px;">CL</span>' +
-                       '</div>',
+              content: `<div style="background: rgba(255, 100, 100, 0.8); border-radius: 50%; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;">
+                          <span style="font-size: 14px;">CL</span>
+                        </div>`,
               size: new naver.maps.Size(40, 40),
               anchor: new naver.maps.Point(20, 20)
             }],
@@ -146,7 +142,7 @@
 
         })
         .catch(err => {
-          console.error('마커 데이터 로드 실패:', err);
+          console.error("lifesavers.json 로딩 실패:", err);
         });
     }
 
