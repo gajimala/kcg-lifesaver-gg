@@ -137,17 +137,13 @@
         myLat = pos.coords.latitude;
         myLng = pos.coords.longitude;
         const location = new naver.maps.LatLng(myLat, myLng);
-        if (!myMarker) {
-         myMarker = new naver.maps.Marker({
-          position: location,
-          map: map,   // 명확히 map 지정
-          icon: {
-            url: "https://kcg-1099287947809.us-central1.run.app/hi.png",
-            size: new naver.maps.Size(40, 40),
-            anchor: new naver.maps.Point(20, 40),
-          },
-          zIndex: 1200
-        });
+    if (!myMarker) {
+      myMarker = new naver.maps.Marker({
+        position: location,
+        map: map,
+        icon: null, // 기본 마커 사용
+        zIndex: 1200
+      });
       } else {
         myMarker.setPosition(location);
       }
