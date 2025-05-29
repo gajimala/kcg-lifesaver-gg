@@ -87,7 +87,7 @@
               const marker = new naver.maps.Marker({
                 position: new naver.maps.LatLng(item.lat, item.lng),
                 icon: {
-                  url: "https://gajimala.github.io/kcg-lifesaver-gg/icon/hi.png",
+                  url: "/help.png",
                   size: new naver.maps.Size(40, 45),
                   scaledSize: new naver.maps.Size(40, 45),
                   anchor: new naver.maps.Point(20, 45),
@@ -142,19 +142,25 @@
 
         const HOME_PATH = '.'; // 이 부분 추가해서 경로명 확실히 지정
 
-        if (!myMarker) {
-          myMarker = new naver.maps.Marker({
-          position: location,
-          map: map,
-           zIndex: 1200
-           });
+  if (!myMarker) {
+    myMarker = new naver.maps.Marker({
+      position: location,
+      map: map,
+      icon: {
+        url: HOME_PATH + "/hi.png",
+        size: new naver.maps.Size(40, 40),
+        origin: new naver.maps.Point(0, 0),
+        anchor: new naver.maps.Point(20, 40),
+      },
+      zIndex: 1200
+    });
         } else {
           myMarker.setPosition(location);
         }
 
         if (!firstCentered) {
           map.setCenter(location);
-          map.setZoom(7);
+          map.setZoom(17);
           firstCentered = true;
         }
       });
