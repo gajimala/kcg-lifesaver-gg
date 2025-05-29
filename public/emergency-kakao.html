@@ -15,24 +15,23 @@
       border-radius: 4px;
       font-size: 14px;
       cursor: pointer;
+      user-select: none;
     }
     #locationButton, #mapTypeSelector {
       background: rgba(255, 255, 255, 0.9);
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     }
     #sosButton {
-      position: absolute;
       top: 10px;
       right: 10px;
       background: #ffdddd;
       color: red;
       font-weight: bold;
-      border: 1px solid #ccc;
       border-radius: 8px;
       padding: 8px 12px;
       font-size: 14px;
-      width: auto;
       max-width: 150px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     }
     #locationButton:hover, #mapTypeSelector:hover {
       background: rgba(240, 240, 240, 0.9);
@@ -82,13 +81,13 @@
       level: 5
     });
 
-    var markers = [];
-    var lifesavers = [];
-    var myLat = null;
-    var myLng = null;
-    var myLocationMarker = null;
-    var infoWindow = new kakao.maps.InfoWindow({ zIndex: 9999 });
-    var firstCentered = false;
+    let markers = [];
+    let lifesavers = [];
+    let myLat = null;
+    let myLng = null;
+    let myLocationMarker = null;
+    const infoWindow = new kakao.maps.InfoWindow({ zIndex: 9999 });
+    let firstCentered = false;
 
     map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
@@ -97,7 +96,7 @@
         myLat = position.coords.latitude;
         myLng = position.coords.longitude;
 
-        var myLocation = new kakao.maps.LatLng(myLat, myLng);
+        const myLocation = new kakao.maps.LatLng(myLat, myLng);
 
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
@@ -149,36 +148,35 @@
         .then(data => {
           lifesavers = data;
 
-          for (var i = 0; i < lifesavers.length; i++) {
-            (function(item) {
-              if (item.lat && item.lng) {
-                var marker = new kakao.maps.Marker({
-                  position: new kakao.maps.LatLng(item.lat, item.lng),
-                  title: item.name || "인명구조함",
-                  image: new kakao.maps.MarkerImage(
-                    "/help.png",
-                    new kakao.maps.Size(40, 45),
-                    { offset: new kakao.maps.Point(20, 45) }
-                  )
-                });
+          for (let i = 0; i < lifesavers.length; i++) {
+            const item = lifesavers[i];
+            if (item.lat && item.lng) {
+              const marker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(item.lat, item.lng),
+                title: item.name || "인명구조함",
+                image: new kakao.maps.MarkerImage(
+                  "/help.png",
+                  new kakao.maps.Size(40, 45),
+                  { offset: new kakao.maps.Point(20, 45) }
+                )
+              });
 
-                kakao.maps.event.addListener(marker, 'click', function() {
-                  var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
-                  var iwContent = `
-                    <div style="padding:6px; font-size:13px; background:white; z-index:9999; position:relative; pointer-events:auto;">
-                      인명구조함<br>
-                      <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
-                        길찾기
-                      </button>
-                    </div>
-                  `;
-                  infoWindow.setContent(iwContent);
-                  infoWindow.open(map, marker);
-                });
+              kakao.maps.event.addListener(marker, 'click', () => {
+                const url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
+                const iwContent = `
+                  <div style="padding:6px; font-size:13px; background:white; z-index:9999; position:relative; pointer-events:auto;">
+                    인명구조함<br>
+                    <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                      길찾기
+                    </button>
+                  </div>
+                `;
+                infoWindow.setContent(iwContent);
+                infoWindow.open(map, marker);
+              });
 
-                markers.push(marker);
-              }
-            })(lifesavers[i]);
+              markers.push(marker);
+            }
           }
 
           clusterer.addMarkers(markers);
@@ -192,14 +190,14 @@
     function updateMarkers() {
       if (markers.length === 0) return;
 
-      var bounds = map.getBounds();
-      var sw = bounds.getSouthWest();
-      var ne = bounds.getNorthEast();
+      const bounds = map.getBounds();
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
 
-      markers.forEach(function(marker) {
-        var pos = marker.getPosition();
-        var lat = pos.getLat();
-        var lng = pos.getLng();
+      markers.forEach(marker => {
+        const pos = marker.getPosition();
+        const lat = pos.getLat();
+        const lng = pos.getLng();
 
         if (lat >= sw.getLat() && lat <= ne.getLat() &&
             lng >= sw.getLng() && lng <= ne.getLng()) {
@@ -214,7 +212,7 @@
 
     loadMarkers();
 
-    document.getElementById('locationButton').addEventListener('click', function() {
+    document.getElementById('locationButton').addEventListener('click', () => {
       if (myLat && myLng) {
         const center = new kakao.maps.LatLng(myLat, myLng);
         map.setCenter(center);
@@ -232,7 +230,7 @@
       }
     });
 
-    document.getElementById('sosButton').addEventListener('click', function() {
+    document.getElementById('sosButton').addEventListener('click', () => {
       if (myLat && myLng) {
         const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
         if (!agree) return;
