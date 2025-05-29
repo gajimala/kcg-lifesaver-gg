@@ -128,7 +128,6 @@
         const visible = bounds.hasLatLng(marker.getPosition());
         marker.setMap(visible ? map : null);
       });
-      // 내 위치 마커는 항상 표시
       if (myMarker) myMarker.setMap(map);
     }
 
@@ -140,20 +139,18 @@
         myLng = pos.coords.longitude;
         const location = new naver.maps.LatLng(myLat, myLng);
 
-        const HOME_PATH = '.'; // 이 부분 추가해서 경로명 확실히 지정
-
-  if (!myMarker) {
-    myMarker = new naver.maps.Marker({
-      position: location,
-      map: map,
-      icon: {
-        url: "https://kcghelp-1099287947809.us-central1.run.app/hi.png",
-        size: new naver.maps.Size(100, 100),
-        origin: new naver.maps.Point(0, 0),
-        anchor: new naver.maps.Point(20, 40),
-      },
-      zIndex: 1200
-    });
+        if (!myMarker) {
+          myMarker = new naver.maps.Marker({
+            position: location,
+            map: map,
+            icon: {
+              url: "/hi.png",
+              size: new naver.maps.Size(100, 100),
+              origin: new naver.maps.Point(0, 0),
+              anchor: new naver.maps.Point(20, 40),
+            },
+            zIndex: 1200
+          });
         } else {
           myMarker.setPosition(location);
         }
