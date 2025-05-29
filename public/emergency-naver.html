@@ -136,18 +136,19 @@
       navigator.geolocation.watchPosition(pos => {
         myLat = pos.coords.latitude;
         myLng = pos.coords.longitude;
-        const location = new naver.maps.LatLng(myLat, myLng);
-    if (!myMarker) {
-      myMarker = new naver.maps.Marker({
-        position: location,
-        map: map,
-        icon: null, // 기본 마커 사용
-        zIndex: 1200
-      });
-      } else {
-        myMarker.setPosition(location);
-      }
+        
+// location은 반드시 LatLng 객체로
+const location = new naver.maps.LatLng(latitude, longitude);
 
+if (!myMarker) {
+  myMarker = new naver.maps.Marker({
+    position: location,
+    map: map,
+    zIndex: 1200
+  });
+} else {
+  myMarker.setPosition(location);
+}
 
         if (!firstCentered) {
           map.setCenter(location);
