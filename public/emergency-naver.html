@@ -1,4 +1,4 @@
-7<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -140,14 +140,17 @@
         myLng = pos.coords.longitude;
         const location = new naver.maps.LatLng(myLat, myLng);
 
+        const HOME_PATH = '.'; // 이 부분 추가해서 경로명 확실히 지정
+
         if (!myMarker) {
           myMarker = new naver.maps.Marker({
             position: location,
             map: map,
             icon: {
-             url: "/help.png", // 원하는 파일명으로 교체
-            size: new naver.maps.Size(40, 40),
-          anchor: new naver.maps.Point(20, 40),
+             url: "/help.png", // 경로를 HOME_PATH로 명확히 지정
+             size: new naver.maps.Size(40, 40),
+             origin: new naver.maps.Point(0, 0),
+             anchor: new naver.maps.Point(20, 40),
             },
             zIndex: 1200
           });
