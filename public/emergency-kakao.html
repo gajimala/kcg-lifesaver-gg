@@ -11,7 +11,7 @@
       position: absolute;
       z-index: 100;
       padding: 6px 10px;
-      border: 1px solid #ccc;f
+      border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 14px;
       cursor: pointer;
@@ -127,6 +127,22 @@
       console.error("Geolocation 미지원");
     }
 
+    const clusterer = new kakao.maps.MarkerClusterer({
+      map: map,
+      averageCenter: true,
+      minLevel: 7,
+      styles: [{
+        width: '40px',
+        height: '40px',
+        background: 'rgba(255, 100, 100, 0.6)',
+        color: '#fff',
+        borderRadius: '20px',
+        textAlign: 'center',
+        lineHeight: '40px',
+        fontWeight: 'bold'
+      }]
+    });
+
     function loadMarkers() {
       fetch("lifesavers.json")
         .then(res => res.json())
@@ -145,7 +161,6 @@
                     { offset: new kakao.maps.Point(20, 45) }
                   )
                 });
-                markers.push(marker);
 
                 kakao.maps.event.addListener(marker, 'click', function() {
                   var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
@@ -160,10 +175,13 @@
                   infoWindow.setContent(iwContent);
                   infoWindow.open(map, marker);
                 });
+
+                markers.push(marker);
               }
             })(lifesavers[i]);
           }
 
+          clusterer.addMarkers(markers);
           updateMarkers();
         })
         .catch(error => {
