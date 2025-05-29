@@ -2,187 +2,241 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>인명구조함 지도 (네이버 + Firebase)</title>    
-  <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>    
-  <style>    
-    html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }    
-    #locationButton, #mapTypeSelector, #sosButton {    
-      position: absolute;    
-      z-index: 100;    
-      padding: 6px 10px;    
-      border: 1px solid #ccc;    
-      border-radius: 4px;    
-      font-size: 14px;    
-      cursor: pointer;    
-    }    
-    #locationButton, #mapTypeSelector {    
-      background: rgba(255, 255, 255, 0.9);    
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);    
-    }    
-    #sosButton {    
-      top: 10px;    
-      right: 10px;    
-      background: #ffdddd;    
-      color: red;    
-      font-weight: bold;    
-      border-radius: 8px;    
-      padding: 8px 12px;    
-      font-size: 14px;    
-    }    
-    #locationButton:hover, #mapTypeSelector:hover { background: #f0f0f0; }    
-    #sosButton:hover { background: #ffe0e0; }    
-    #locationButton { top: 10px; left: 10px; }    
-    #mapTypeSelector { top: 50px; left: 10px; }    
-  </style>    
-</head>    
-<body>    
-  <div id="map"></div>    
-  <button id="locationButton">내 위치로 이동</button>    
-  <button id="mapTypeSelector">위성뷰</button>    
-  <button id="sosButton">🚨 구조 요청</button>    
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>긴급구조 위치전송</title>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7&libraries=clusterer"></script>
+  <style>
+    html, body, #map {
+      width: 100%;
+      height: 100%;
+      margin: 0; padding: 0;
+    }
+    #locationButton, #mapTypeSelector, #sosButton {
+      position: absolute;
+      z-index: 100;
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      user-select: none;
+    }
+    #locationButton { top: 10px; left: 10px; }
+    #mapTypeSelector { top: 50px; left: 10px; }
+    #sosButton {
+      top: 10px; right: 10px;
+      background: #ffdddd;
+      color: red;
+      font-weight: bold;
+      border-radius: 8px;
+      max-width: 150px;
+      box-shadow: none;
+    }
+    #locationButton:hover, #mapTypeSelector:hover {
+      background: rgba(240, 240, 240, 0.9);
+    }
+    #sosButton:hover {
+      background: #ffe0e0;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <button id="locationButton">내 위치로 이동</button>
+  <button id="mapTypeSelector">항공뷰</button>
+  <button id="sosButton">🚨 구조 요청</button>
 
-  <script type="module">    
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";    
-    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
-    const firebaseConfig = {    
-      apiKey: "AIzaSyDAWuBw94gzYiPrUTOY41zque2WvgCnRj4",    
-      authDomain: "kcghelp-cf3e4.firebaseapp.com",    
-      databaseURL: "https://kcghelp-cf3e4-default-rtdb.firebaseio.com",    
-      projectId: "kcghelp-cf3e4",    
-      storageBucket: "kcghelp-cf3e4.appspot.com",    
-      messagingSenderId: "374111271871",    
-      appId: "1:374111271871:web:d1cf45fdc2a93930c77f0a",    
-      measurementId: "G-DGDBZ38LW4"    
-    };    
-
-    const app = initializeApp(firebaseConfig);    
-    const database = getDatabase(app);    
-
-    let myLat = 37.75, myLng = 128.9;
-    let map = new naver.maps.Map('map', {
-      center: new naver.maps.LatLng(myLat, myLng),
-      zoom: 12,
-      mapTypeControl: false
-    });
-
-    let myMarker = null; 
-    let firstCentered = false;
-
-    const markers = []; 
-    const infoWindows = [];
+    // Firebase 초기화
+    const firebaseConfig = {
+      apiKey: "AIzaSyDAWuBw94gzYiPrUTOY41zque2WvgCnRj4",
+      authDomain: "kcghelp-cf3e4.firebaseapp.com",
+      databaseURL: "https://kcghelp-cf3e4-default-rtdb.firebaseio.com",
+      projectId: "kcghelp-cf3e4",
+      storageBucket: "kcghelp-cf3e4.appspot.com",
+      messagingSenderId: "374111271871",
+      appId: "1:374111271871:web:d1cf45fdc2a93930c77f0a",
+      measurementId: "G-DGDBZ38LW4"
+    };
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
     function sendSosRequest(lat, lng) {
-      const requestsRef = ref(database, 'emergency/requests'); 
-      return push(requestsRef, { lat, lng, timestamp: Date.now() }); 
+      const requestsRef = ref(database, 'emergency/requests');
+      return push(requestsRef, {
+        lat,
+        lng,
+        timestamp: Date.now()
+      });
     }
 
+    // 카카오 지도 생성
+    const map = new kakao.maps.Map(document.getElementById('map'), {
+      center: new kakao.maps.LatLng(37.75, 128.9),
+      level: 5,
+      mapTypeId: kakao.maps.MapTypeId.NORMAL
+    });
+
+    let markers = [];
+    let lifesavers = [];
+    let myLat = null;
+    let myLng = null;
+    let myLocationMarker = null;
+    let infoWindow = new kakao.maps.InfoWindow({ zIndex: 9999 });
+    let firstCentered = false;
+
+    // 내 위치 추적
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(function(position) {
+        myLat = position.coords.latitude;
+        myLng = position.coords.longitude;
+        console.log("현재 위치 감지:", myLat, myLng);
+
+        const myLocation = new kakao.maps.LatLng(myLat, myLng);
+
+        if (myLocationMarker) {
+          myLocationMarker.setPosition(myLocation);
+          console.log("내 위치 마커 위치 업데이트");
+        } else {
+          myLocationMarker = new kakao.maps.Marker({
+            position: myLocation,
+            map: map,
+            image: new kakao.maps.MarkerImage(
+              '/hi.png', // 이미지 경로가 올바른지 확인하세요
+              new kakao.maps.Size(40, 40),
+              { offset: new kakao.maps.Point(20, 40) }
+            )
+          });
+          console.log("내 위치 마커 생성");
+        }
+
+        if (!firstCentered) {
+          map.setCenter(myLocation);
+          map.setLevel(5);
+          firstCentered = true;
+          console.log("지도 중심을 내 위치로 이동");
+        }
+      }, function(error) {
+        console.error("위치 추적 실패:", error);
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0
+      });
+    } else {
+      console.error("Geolocation 미지원");
+    }
+
+    // lifesavers.json 데이터 불러와서 마커 생성
     function loadMarkers() {
       fetch("lifesavers.json")
         .then(res => res.json())
         .then(data => {
-          data.forEach(item => {
+          lifesavers = data;
+
+          for (let item of lifesavers) {
             if (item.lat && item.lng) {
-              const marker = new naver.maps.Marker({
-                position: new naver.maps.LatLng(item.lat, item.lng),
-                icon: {
-                  url: "/help.png",
-                  size: new naver.maps.Size(40, 45),
-                  scaledSize: new naver.maps.Size(40, 45),
-                  anchor: new naver.maps.Point(20, 45),
-                },
-                map,
-                zIndex: 1000
+              const marker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(item.lat, item.lng),
+                title: item.name || "인명구조함",
+                image: new kakao.maps.MarkerImage(
+                  "/help.png",
+                  new kakao.maps.Size(40, 45),
+                  { offset: new kakao.maps.Point(20, 45) }
+                )
               });
+              markers.push(marker);
 
-              const url = `https://map.naver.com/v5/directions/-/141.6,37.6,,PLACE_POI/${item.lng},${item.lat},인명구조함,PLACE_POI`;
-              const content = `<div style="padding:6px; font-size:13px;">
-                인명구조함<br>
-                <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
-                  길찾기
-                </button>
-              </div>`;
-
-              const infoWindow = new naver.maps.InfoWindow({    
-                content,    
-                zIndex: 1100    
-              });    
-
-              marker.addListener('click', () => {    
-                infoWindows.forEach(iw => iw.close());    
-                infoWindow.open(map, marker);    
-              });    
-
-              markers.push(marker);    
-              infoWindows.push(infoWindow);    
+              kakao.maps.event.addListener(marker, 'click', function() {
+                const url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
+                const iwContent = `
+                  <div style="padding:6px; font-size:13px; background:white; z-index:9999; position:relative; pointer-events:auto;">
+                    인명구조함<br>
+                    <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                      길찾기
+                    </button>
+                  </div>`;
+                infoWindow.setContent(iwContent);
+                infoWindow.open(map, marker);
+              });
             }
-          });
+          }
           updateMarkers();
+        })
+        .catch(error => {
+          console.error('lifesavers.json 불러오기 오류:', error);
         });
     }
 
+    // 지도 영역 내에 있는 마커만 보여주기
     function updateMarkers() {
+      if (markers.length === 0) return;
       const bounds = map.getBounds();
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+
       markers.forEach(marker => {
-        const visible = bounds.hasLatLng(marker.getPosition());
-        marker.setMap(visible ? map : null);
-      });
-      // 내 위치 마커는 항상 표시
-      if (myMarker) myMarker.setMap(map);
-    }
+        const pos = marker.getPosition();
+        const lat = pos.getLat();
+        const lng = pos.getLng();
 
-    naver.maps.Event.addListener(map, 'idle', updateMarkers);
-
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(pos => {
-        myLat = pos.coords.latitude;
-        myLng = pos.coords.longitude;
-        const location = new naver.maps.LatLng(myLat, myLng);
-
-        const HOME_PATH = '.'; // 이 부분 추가해서 경로명 확실히 지정
-
-        if (!myMarker) {
-          myMarker = new naver.maps.Marker({
-          position: location,
-          map: map,
-           zIndex: 1200
-           });
+        if (lat >= sw.getLat() && lat <= ne.getLat() &&
+            lng >= sw.getLng() && lng <= ne.getLng()) {
+          marker.setMap(map);
         } else {
-          myMarker.setPosition(location);
-        }
-
-        if (!firstCentered) {
-          map.setCenter(location);
-          map.setZoom(7);
-          firstCentered = true;
+          marker.setMap(null);
         }
       });
     }
+
+    kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
 
     loadMarkers();
 
-    document.getElementById('locationButton').onclick = () => {
-      if (myLat && myLng)
-        map.setCenter(new naver.maps.LatLng(myLat, myLng));
-    };
+    // 내 위치로 이동 버튼
+    document.getElementById('locationButton').addEventListener('click', () => {
+      if (myLat && myLng) {
+        const center = new kakao.maps.LatLng(myLat, myLng);
+        map.setCenter(center);
+        map.setLevel(5);
+      } else {
+        alert("현재 위치를 감지할 수 없습니다.");
+      }
+    });
 
-    document.getElementById('mapTypeSelector').onclick = function () {
-      const isSatellite = map.getMapTypeId() === naver.maps.MapTypeId.SATELLITE;
-      map.setMapTypeId(isSatellite ? naver.maps.MapTypeId.BASIC : naver.maps.MapTypeId.SATELLITE);
-      this.textContent = isSatellite ? "위성뷰" : "일반 지도";
-    };
+    // 지도 타입 토글 (일반 ↔ 항공뷰)
+    document.getElementById('mapTypeSelector').addEventListener('click', function() {
+      if (map.getMapTypeId() === kakao.maps.MapTypeId.SKYVIEW) {
+        map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
+        this.textContent = '항공뷰';
+      } else {
+        map.setMapTypeId(kakao.maps.MapTypeId.SKYVIEW);
+        this.textContent = '일반 지도';
+      }
+    });
 
-    document.getElementById('sosButton').onclick = () => {
-      if (!myLat || !myLng) return alert("현재 위치를 감지할 수 없습니다.");
-      const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
-      if (!agree) return;
+    // 구조 요청 버튼 클릭
+    document.getElementById('sosButton').addEventListener('click', () => {
+      if (myLat && myLng) {
+        const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
+        if (!agree) return;
 
-      sendSosRequest(myLat, myLng)
-        .then(() => alert("구조 요청이 접수되었습니다."))
-        .catch(() => alert("전송 실패: 네트워크 오류가 발생했습니다."));
-    };
-
+        sendSosRequest(myLat, myLng)
+          .then(() => {
+            alert("구조 요청이 접수되었습니다.");
+          })
+          .catch(err => {
+            console.error(err);
+            alert("구조 요청 중 오류가 발생했습니다.");
+          });
+      } else {
+        alert("현재 위치를 확인할 수 없습니다.");
+      }
+    });
   </script>
 </body>
 </html>
