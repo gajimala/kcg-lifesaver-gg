@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>인명구조함 지도 (네이버)</title>
+  <title>인명구조함 지도 (네이버) - 클러스터 적용</title>
   <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
@@ -44,6 +44,23 @@
   let markers = [];
   const infoWindow = new naver.maps.InfoWindow();
 
+  // 마커 클러스터러 생성 (최소 2개 이상일 때 클러스터링 시작)
+  const markerCluster = new naver.maps.MarkerClustering({
+    map: map,
+    minClusterSize: 2,
+    maxZoom: 15,
+    gridSize: 100,
+    icons: [
+      {
+        url: '/cluster-icon.png',  // 클러스터 아이콘 이미지 경로 (적절히 교체하세요)
+        size: new naver.maps.Size(40, 40),
+        anchor: new naver.maps.Point(20, 20),
+        textColor: '#fff',
+        textSize: 12
+      }
+    ]
+  });
+
   function startTracking() {
     if (navigator.geolocation) {
       navigator.geolocation.watchPosition(function(position) {
@@ -72,11 +89,16 @@
     }
   }
 
-    function loadMarkers() {
+  function loadMarkers() {
     fetch("/lifesavers")
       .then(response => response.json())
       .then(data => {
         lifesavers = data;
+
+        // 기존 마커 모두 제거 (클러스터 초기화)
+        markerCluster.clear();
+        markers = [];
+
         data.forEach(item => {
           var lat = parseFloat(item.lat);
           var lng = parseFloat(item.lng);
@@ -84,7 +106,6 @@
           if (!isNaN(lat) && !isNaN(lng)) {
             var marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(lat, lng),
-              map: map,
               title: item.name || "인명구조함",
               icon: {
                 url: "/lifesaver-icon.png",
@@ -94,8 +115,6 @@
                 anchor: new naver.maps.Point(13, 30)
               }
             });
-
-            markers.push(marker);
 
             naver.maps.Event.addListener(marker, 'click', function () {
               if (myLat === null || myLng === null) {
@@ -117,16 +136,22 @@
               infoWindow.setContent(iwContent);
               infoWindow.open(map, marker);
             });
+
+            markers.push(marker);
           }
         });
 
-        updateMarkers();
+        // 마커 클러스터러에 마커 배열 전달
+        markerCluster.addMarkers(markers);
+
+        updateMarkers(); // 클러스터 내부에서 관리하므로 이 함수는 크게 필요 없지만 유지 가능
       })
       .catch(err => {
         console.error("lifesavers.json 불러오기 오류:", err);
       });
   }
 
+  // 클러스터가 관리하므로 필요에 따라 비활성화 가능
   function updateMarkers() {
     if (!markers.length) return;
 
