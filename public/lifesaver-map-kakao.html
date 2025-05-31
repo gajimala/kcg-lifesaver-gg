@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>인명구조함 지도 (카카오)</title>
-  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7&libraries=clusterer"></script>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
     #locationButton, #mapTypeSelector {
@@ -45,7 +45,6 @@
   let myLon = null;
   let myLocationMarker = null;
   let infoWindow = new kakao.maps.InfoWindow();
-  let clusterer = null;
 
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
@@ -85,6 +84,9 @@
       .then(data => {
         lifesavers = data;
 
+        markers.forEach(m => m.setMap(null));
+        markers = [];
+
         lifesavers.forEach(item => {
           if (item.lat && item.lng) {
             const marker = new kakao.maps.Marker({
@@ -113,43 +115,13 @@
                 </div>
               `;
               infoWindow.setContent(iwContent);
-              map.setCenter(marker.getPosition()); // ✅ infoWindow가 밀리지 않도록 중심 이동 추가
+              map.setCenter(marker.getPosition());
               infoWindow.open(map, marker);
             });
           }
         });
 
         updateMarkers();
-
-        if (!clusterer) {
-          clusterer = new kakao.maps.MarkerClusterer({
-            map: map,
-            averageCenter: true,
-            minLevel: 9,
-            disableClickZoom: false,
-            styles: [{
-              width: '40px',
-              height: '40px',
-              background: 'rgba(255, 100, 100, 0.7)',
-              color: '#fff',
-              borderRadius: '20px',
-              textAlign: 'center',
-              lineHeight: '40px',
-              fontWeight: 'bold',
-              fontSize: '14px',
-              border: '2px solid white',
-              boxShadow: '0 0 5px rgba(0,0,0,0.5)'
-            }]
-          });
-
-          kakao.maps.event.addListener(clusterer, 'clusterclick', function(cluster) {
-            infoWindow.close();
-          });
-        } else {
-          clusterer.clear();
-        }
-
-        clusterer.addMarkers(markers);
       })
       .catch(error => {
         console.error('lifesavers.json 불러오기 오류:', error);
@@ -157,24 +129,21 @@
   }
 
   function updateMarkers() {
-    if (!clusterer || markers.length === 0) return;
+    if (markers.length === 0) return;
 
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
 
-    const visibleMarkers = [];
-
     markers.forEach(marker => {
       const pos = marker.getPosition();
       if (pos.getLat() >= sw.getLat() && pos.getLat() <= ne.getLat() &&
           pos.getLng() >= sw.getLng() && pos.getLng() <= ne.getLng()) {
-        visibleMarkers.push(marker);
+        marker.setMap(map);
+      } else {
+        marker.setMap(null);
       }
     });
-
-    clusterer.clear();
-    clusterer.addMarkers(visibleMarkers);
   }
 
   kakao.maps.event.addListener(map, 'click', function () {
