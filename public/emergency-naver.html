@@ -140,21 +140,23 @@
 // location은 반드시 LatLng 객체로
 const location = new naver.maps.LatLng(latitude, longitude);
 
-if (!myMarker) {
-  myMarker = new naver.maps.Marker({
-    position: location,
-    map: map,
-    zIndex: 1200
-  });
-} else {
-  myMarker.setPosition(location);
-}
-
-        if (!firstCentered) {
-          map.setCenter(location);
-          map.setZoom(17);
-          firstCentered = true;
+        if (myLocationMarker) {
+          myLocationMarker.setPosition(myLocation);
+        } else {
+          myLocationMarker = new naver.maps.Marker({
+            position: myLocation,
+            map: map,
+            icon: {
+              content: '<div style="width:12px;height:12px;background:#4285F4;border-radius:50%;border:2px solid white;"></div>',
+              anchor: new naver.maps.Point(6, 6)
+            }
+          });
         }
+      }, function(error) {
+        console.error("위치 추적 실패:", error);
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0
       });
     }
 
