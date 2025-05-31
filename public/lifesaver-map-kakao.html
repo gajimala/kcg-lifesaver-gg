@@ -100,9 +100,8 @@
             marker.item = item;
             markers.push(marker);
 
-            // 기존 클릭 리스너에서 정보창 열기 전, 기존 infoWindow 닫기 추가 - 중복 정보창 방지
             kakao.maps.event.addListener(marker, 'click', function () {
-              infoWindow.close(); // *** 추가: 기존 열린 정보창 닫기
+              infoWindow.close();
 
               const url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
               const iwContent = `
@@ -114,8 +113,7 @@
                 </div>
               `;
               infoWindow.setContent(iwContent);
-
-              // *** infoWindow가 항상 위에 표시되도록 open 시 옵션 추가 (z-index 자동 관리)
+              map.setCenter(marker.getPosition()); // ✅ infoWindow가 밀리지 않도록 중심 이동 추가
               infoWindow.open(map, marker);
             });
           }
@@ -144,10 +142,8 @@
             }]
           });
 
-          // *** 클러스터 클릭 시 기존 infoWindow 닫기 추가 (정보창 겹침 방지)
           kakao.maps.event.addListener(clusterer, 'clusterclick', function(cluster) {
             infoWindow.close();
-            // 클러스터 클릭 후 처리할 추가 동작 있으면 여기에...
           });
         } else {
           clusterer.clear();
@@ -160,7 +156,6 @@
       });
   }
 
-  // 클러스터러 기반 updateMarkers (지도 범위 내 마커만 보여줌)
   function updateMarkers() {
     if (!clusterer || markers.length === 0) return;
 
@@ -182,7 +177,6 @@
     clusterer.addMarkers(visibleMarkers);
   }
 
-  // 지도 클릭 시 열린 정보창 닫기 (기존 코드 유지)
   kakao.maps.event.addListener(map, 'click', function () {
     infoWindow.close();
   });
