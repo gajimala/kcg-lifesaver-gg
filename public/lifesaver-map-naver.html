@@ -90,7 +90,7 @@
   }
 
   function loadMarkers() {
-    fetch("/lifesavers")
+    fetch("/lifesavers.json")
       .then(response => response.json())
       .then(data => {
         lifesavers = data;
