@@ -1,4 +1,3 @@
-<!-- naver.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -68,8 +67,6 @@
     });
 
     let myMarker = null;
-    let firstCentered = false;
-
     const markers = [];
     const infoWindows = [];
 
@@ -89,11 +86,11 @@
                 icon: {
                   url: "help.png",
                   size: new naver.maps.Size(40, 45),
-                  scaledSize: new naver.maps.Size(40, 45), // 강제 리사이징
+                  scaledSize: new naver.maps.Size(40, 45),
                   anchor: new naver.maps.Point(20, 45),
                 },
                 map,
-                zIndex: 1000 // 마커를 지도보다 앞으로
+                zIndex: 1000
               });
 
               const url = `https://map.naver.com/v5/directions/-/141.6,37.6,,PLACE_POI/${item.lng},${item.lat},인명구조함,PLACE_POI`;
@@ -106,7 +103,7 @@
 
               const infoWindow = new naver.maps.InfoWindow({
                 content,
-                zIndex: 1100 // infoWindow는 마커보다 위에 표시되도록 더 큰 zIndex
+                zIndex: 1100
               });
 
               marker.addListener('click', () => {
@@ -136,23 +133,23 @@
       navigator.geolocation.watchPosition(pos => {
         myLat = pos.coords.latitude;
         myLng = pos.coords.longitude;
-        
-// location은 반드시 LatLng 객체로
-const location = new naver.maps.LatLng(latitude, longitude);
 
-        if (myLocationMarker) {
-          myLocationMarker.setPosition(myLocation);
+        const myLocation = new naver.maps.LatLng(myLat, myLng);
+
+        if (myMarker) {
+          myMarker.setPosition(myLocation);
         } else {
-          myLocationMarker = new naver.maps.Marker({
+          myMarker = new naver.maps.Marker({
             position: myLocation,
             map: map,
             icon: {
               content: '<div style="width:12px;height:12px;background:#4285F4;border-radius:50%;border:2px solid white;"></div>',
               anchor: new naver.maps.Point(6, 6)
-            }
+            },
+            zIndex: 1000
           });
         }
-      }, function(error) {
+      }, error => {
         console.error("위치 추적 실패:", error);
       }, {
         enableHighAccuracy: true,
