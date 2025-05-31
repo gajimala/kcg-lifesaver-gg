@@ -67,3 +67,26 @@ def get_lifesavers():
 
 # 정적 파일 서빙 (맨 마지막에 위치해야 함)
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
+
+
+# ✅ 새 기능 추가: 지도 범위 내 구조함 개수 반환
+from fastapi import Query
+
+@app.get("/lifesaver_count")
+def lifesaver_count(
+    left: float = Query(...),
+    bottom: float = Query(...),
+    right: float = Query(...),
+    top: float = Query(...)
+):
+    try:
+        with open("public/lifesavers.json", encoding="utf-8") as f:
+            lifesavers = json.load(f)
+
+        count = sum(
+            1 for item in lifesavers
+            if left <= item["lng"] <= right and bottom <= item["lat"] <= top
+        )
+        return {"count": count}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
