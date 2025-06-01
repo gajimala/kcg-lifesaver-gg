@@ -73,11 +73,37 @@
             <td class="addressCell">불러오는 중...</td>
           `;
 
+          // 마커 클릭 시 정보창 열기
+          kakao.maps.event.addListener(marker, 'click', () => {
+            map.setCenter(pos);
+            map.setLevel(5);
+            const content = `<div style="
+              padding: 10px 15px;
+              font-size: 16px;
+              white-space: nowrap;
+              max-width: 320px;
+              overflow-x: auto;
+              font-weight: 600;
+            ">
+              <strong>구조 요청</strong> — ${date.toLocaleString()} — 위도: ${latDMS} 경도: ${lngDMS}
+            </div>`;
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+          });
+
+          // 테이블 행 클릭 시 정보창 열기
           row.addEventListener('click', () => {
             map.setCenter(pos);
             map.setLevel(5);
-            const content = `<div style="padding:6px; font-size:13px;">
-              <strong>구조 요청</strong><br>${date.toLocaleString()}<br>위도: ${latDMS} 경도: ${lngDMS}
+            const content = `<div style="
+              padding: 10px 15px;
+              font-size: 16px;
+              white-space: nowrap;
+              max-width: 320px;
+              overflow-x: auto;
+              font-weight: 600;
+            ">
+              <strong>구조 요청</strong> — ${date.toLocaleString()} — 위도: ${latDMS} 경도: ${lngDMS}
             </div>`;
             infoWindow.setContent(content);
             infoWindow.open(map, marker);
@@ -130,7 +156,7 @@
       padding: 6px 10px;
       text-align: center;
       vertical-align: middle;
-      font-size: 13px;
+      font-size: 15px; /* 글씨 크기 키움 */
     }
     #requestsList th {
       background-color: #4a90e2;
