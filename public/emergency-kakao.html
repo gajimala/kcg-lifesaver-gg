@@ -11,7 +11,7 @@
       position: absolute;
       z-index: 100;
       padding: 6px 10px;
-      border: 1px solid #ccc;f
+      border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 14px;
       cursor: pointer;
@@ -87,7 +87,8 @@
     var myLat = null;
     var myLng = null;
     var myLocationMarker = null;
-    var infoWindow = new kakao.maps.InfoWindow({ zIndex: 9999 });
+    var infoWindow = new kakao.maps.InfoWindow({ zIndex: 999999 });  // zIndex 아주 높게
+
     var firstCentered = false;
 
     map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
@@ -150,7 +151,7 @@
                 kakao.maps.event.addListener(marker, 'click', function() {
                   var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
                   var iwContent = `
-                    <div style="padding:6px; font-size:13px; background:white; z-index:9999; position:relative; pointer-events:auto;">
+                    <div style="padding:6px; font-size:13px; background:white; z-index:999999; position:relative; pointer-events:auto;">
                       인명구조함<br>
                       <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
                         길찾기
