@@ -33,6 +33,33 @@
       const geocoder = new kakao.maps.services.Geocoder();
       const infoWindow = new kakao.maps.InfoWindow({ removable: true });
 
+      // 현재 infoWindow 내용 중 폰트 크기 상태 변수
+      let currentFontSize = 18; // 기본 폰트 크기(px) (줌 레벨 8일때 기준)
+
+      // 줌 레벨에 따라 infoWindow 폰트 크기 조절 함수
+      function updateInfoWindowFontSize() {
+        const zoom = map.getLevel();
+        // 레벨이 낮을수록 확대(1이 최대 확대), 폰트 크기 크게 조절
+        // 레벨 8 기준 18px, 레벨 1일땐 32px 정도로 확대, 레벨 14쯤엔 12px 정도로 축소
+        // 대략적인 비례식: fontSize = 40 - zoom * 2.5 (적당히 조절)
+        currentFontSize = Math.min(Math.max(12, 40 - zoom * 2.5), 32);
+
+        // 열린 infoWindow가 있으면 내용 다시 셋팅해서 크기 반영
+        if (infoWindow.getMap()) {
+          // infoWindow가 연결된 마커의 위치를 알아내기 위해
+          // infoWindow 내부에서 마커 위치를 추적할 방법이 없으니,
+          // infoWindow 내용 재생성에 필요한 데이터는 별도로 저장 필요
+          // 여기서는 간단히 infoWindow의 content HTML 내에서 폰트 크기만 바꾸기
+
+          // infoWindow 내용에서 font-size 부분만 교체
+          let content = infoWindow.getContent();
+          // 정규식으로 font-size 스타일만 찾아 바꾸기
+          content = content.replace(/font-size:\s*\d+px/, `font-size: ${currentFontSize}px`);
+
+          infoWindow.setContent(content);
+        }
+      }
+
       function decimalToDMS(degrees) {
         const d = Math.floor(degrees);
         const minFloat = (degrees - d) * 60;
@@ -44,10 +71,38 @@
       const tableBody = document.getElementById('tableBody');
       const requestsRef = ref(database, 'emergency/requests');
 
+      // 마커 저장용 배열 (필요하면 추후 활용 가능)
+      const markers = [];
+
+      // infoWindow 내용 만드는 함수 (폰트 크기 적용)
+      function makeInfoContent(req, date, latDMS, lngDMS) {
+        return `<div style="
+              padding: 12px 16px;
+              font-size: ${currentFontSize}px;
+              font-weight: 600;
+              white-space: normal;
+              word-break: break-word;
+              display: inline-block;
+              background: white;
+              border: 1px solid #888;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            ">
+              🆘 <strong>구조 요청</strong><br>
+              📅 ${date.toLocaleString()}<br>
+              📍 위도: ${latDMS}<br>
+              📍 경도: ${lngDMS}
+            </div>`;
+      }
+
       onValue(requestsRef, (snapshot) => {
         const data = snapshot.val();
         tableBody.innerHTML = '';
         if (!data) return;
+
+        // 기존 마커 전부 삭제
+        markers.forEach(m => m.setMap(null));
+        markers.length = 0;
 
         const requestsArray = Object.values(data)
           .filter(req => req.lat && req.lng && req.timestamp)
@@ -56,6 +111,7 @@
         requestsArray.forEach((req, index) => {
           const pos = new kakao.maps.LatLng(req.lat, req.lng);
           const marker = new kakao.maps.Marker({ position: pos, map, title: "구조 요청 위치" });
+          markers.push(marker);
 
           const latDMS = decimalToDMS(req.lat);
           const lngDMS = decimalToDMS(req.lng);
@@ -77,24 +133,7 @@
           kakao.maps.event.addListener(marker, 'click', () => {
             map.setCenter(pos);
             map.setLevel(5);
-            const content = `<div style="
-              padding: 12px 16px;
-              font-size: 18px;
-              font-weight: 600;
-              white-space: normal;
-              word-break: break-word;
-              display: inline-block;
-              background: white;
-              border: 1px solid #888;
-              border-radius: 8px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            ">
-              🆘 <strong>구조 요청</strong><br>
-              📅 ${date.toLocaleString()}<br>
-              📍 위도: ${latDMS}<br>
-              📍 경도: ${lngDMS}
-            </div>`;
-            infoWindow.setContent(content);
+            infoWindow.setContent(makeInfoContent(req, date, latDMS, lngDMS));
             infoWindow.open(map, marker);
           });
 
@@ -102,24 +141,7 @@
           row.addEventListener('click', () => {
             map.setCenter(pos);
             map.setLevel(5);
-            const content = `<div style="
-              padding: 12px 16px;
-              font-size: 18px;
-              font-weight: 600;
-              white-space: normal;
-              word-break: break-word;
-              display: inline-block;
-              background: white;
-              border: 1px solid #888;
-              border-radius: 8px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            ">
-              🆘 <strong>구조 요청</strong><br>
-              📅 ${date.toLocaleString()}<br>
-              📍 위도: ${latDMS}<br>
-              📍 경도: ${lngDMS}
-            </div>`;
-            infoWindow.setContent(content);
+            infoWindow.setContent(makeInfoContent(req, date, latDMS, lngDMS));
             infoWindow.open(map, marker);
           });
 
@@ -134,6 +156,11 @@
             }
           });
         });
+      });
+
+      // 줌 변경 이벤트에 폰트 크기 업데이트 함수 연결
+      kakao.maps.event.addListener(map, 'zoom_changed', () => {
+        updateInfoWindowFontSize();
       });
     });
   </script>
