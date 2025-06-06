@@ -2,121 +2,227 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>구조 요청 목록</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 2rem;
-      background: #f9f9f9;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      background: #fff;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 0.75rem;
-      text-align: left;
-    }
-    th {
-      background-color: #efefef;
-    }
-    tr:nth-child(even) {
-      background-color: #f4f4f4;
-    }
-    .expired {
-      color: #aaa;
-    }
-  </style>
-</head>
-<body>
-  <h1>구조 요청 목록</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>시간</th>
-        <th>주소</th>
-        <th>비고</th>
-      </tr>
-    </thead>
-    <tbody id="request-body">
-      <tr><td colspan="3">불러오는 중...</td></tr>
-    </tbody>
-  </table>
+  <title>구조 요청 확인</title>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7&libraries=services"></script>
 
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import {
-      getDatabase,
-      ref,
-      remove
-    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyAJwYx-PXfwxzh39VmFY3q9evdRB7vUbYk",
-      authDomain: "kcghelp.firebaseapp.com",
-      projectId: "kcghelp",
-      storageBucket: "kcghelp.appspot.com",
-      messagingSenderId: "1099287947809",
-      appId: "1:1099287947809:web:3295c5b7adfcfcfc3f831c",
-      measurementId: "G-J9YNYDY96W",
-      databaseURL: "https://kcghelp-default-rtdb.firebaseio.com"
+      apiKey: "AIzaSyDAWuBw94gzYiPrUTOY41zque2WvgCnRj4",
+      authDomain: "kcghelp-cf3e4.firebaseapp.com",
+      databaseURL: "https://kcghelp-cf3e4-default-rtdb.firebaseio.com",
+      projectId: "kcghelp-cf3e4",
+      storageBucket: "kcghelp-cf3e4.appspot.com",
+      messagingSenderId: "374111271871",
+      appId: "1:374111271871:web:d1cf45fdc2a93930c77f0a",
+      measurementId: "G-DGDBZ38LW4"
     };
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    async function fetchAndDisplayRequests() {
-      const tbody = document.getElementById("request-body");
-      tbody.innerHTML = "<tr><td colspan='3'>불러오는 중...</td></tr>";
+    window.addEventListener('DOMContentLoaded', () => {
+      const map = new kakao.maps.Map(document.getElementById('map'), {
+        center: new kakao.maps.LatLng(37.5665, 126.9780),
+        level: 8
+      });
 
-      try {
-        const response = await fetch("/emergency/requests.json");
-        if (!response.ok) throw new Error("데이터 로드 실패");
+      const geocoder = new kakao.maps.services.Geocoder();
+      const infoWindow = new kakao.maps.InfoWindow({ removable: true });
 
-        const data = await response.json();
-        const now = Date.now();
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        const validEntries = [];
+      let currentFontSize = 18;
 
-        tbody.innerHTML = "";
+      function updateInfoWindowFontSize() {
+        const zoom = map.getLevel();
+        currentFontSize = Math.min(Math.max(12, 40 - zoom * 2.5), 32);
 
-        for (const [id, req] of Object.entries(data)) {
-          const timestamp = req.timestamp;
-          const isExpired = timestamp && now - timestamp > oneDayMs;
-
-          if (isExpired) {
-            // Firebase에서 삭제
-            await remove(ref(database, `emergency/requests/${id}`));
-            continue;
-          }
-
-          const tr = document.createElement("tr");
-          const time = timestamp ? new Date(timestamp).toLocaleString("ko-KR") : "-";
-          tr.innerHTML = `
-            <td>${time}</td>
-            <td>${req.address ?? "-"}</td>
-            <td>${req.memo ?? ""}</td>
-          `;
-          tbody.appendChild(tr);
+        if (infoWindow.getMap()) {
+          let content = infoWindow.getContent();
+          content = content.replace(/font-size:\s*\d+px/, `font-size: ${currentFontSize}px`);
+          infoWindow.setContent(content);
         }
-
-        if (tbody.children.length === 0) {
-          tbody.innerHTML = "<tr><td colspan='3'>표시할 요청이 없습니다.</td></tr>";
-        }
-
-      } catch (err) {
-        console.error(err);
-        tbody.innerHTML = "<tr><td colspan='3'>불러오기 실패</td></tr>";
       }
+
+      function decimalToDMS(degrees) {
+        const d = Math.floor(degrees);
+        const minFloat = (degrees - d) * 60;
+        const m = Math.floor(minFloat);
+        const s = ((minFloat - m) * 60).toFixed(2);
+        return `${d}° ${m}' ${s}"`;
+      }
+
+      const tableBody = document.getElementById('tableBody');
+      const requestsRef = ref(database, 'emergency/requests');
+      const markers = [];
+
+      function makeInfoContent(req, date, latDMS, lngDMS) {
+        return `<div style="
+              padding: 12px 16px;
+              font-size: ${currentFontSize}px;
+              font-weight: 600;
+              white-space: normal;
+              word-break: break-word;
+              display: inline-block;
+              background: white;
+              border: 1px solid #888;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            ">
+              🆘 <strong>구조 요청</strong><br>
+              📅 ${date.toLocaleString()}<br>
+              📍 위도: ${latDMS}<br>
+              📍 경도: ${lngDMS}
+            </div>`;
+      }
+
+      onValue(requestsRef, (snapshot) => {
+        const data = snapshot.val();
+        tableBody.innerHTML = '';
+        if (!data) return;
+
+        markers.forEach(m => m.setMap(null));
+        markers.length = 0;
+
+        const now = Date.now();
+
+        // ✅ 24시간 지난 요청 삭제
+        Object.entries(data).forEach(([key, req]) => {
+          if (!req.timestamp || now - req.timestamp > 24 * 60 * 60 * 1000) {
+            remove(ref(database, `emergency/requests/${key}`));
+          }
+        });
+
+        const requestsArray = Object.entries(data)
+          .filter(([_, req]) => req.lat && req.lng && req.timestamp && now - req.timestamp <= 24 * 60 * 60 * 1000)
+          .sort((a, b) => b[1].timestamp - a[1].timestamp);
+
+        requestsArray.forEach(([key, req], index) => {
+          const pos = new kakao.maps.LatLng(req.lat, req.lng);
+          const marker = new kakao.maps.Marker({ position: pos, map, title: "구조 요청 위치" });
+          markers.push(marker);
+
+          const latDMS = decimalToDMS(req.lat);
+          const lngDMS = decimalToDMS(req.lng);
+          const date = new Date(req.timestamp);
+          const dateStr = date.toLocaleDateString();
+          const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+          const row = document.createElement('tr');
+          row.style.cursor = 'pointer';
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${dateStr}<br>${timeStr}</td>
+            <td>${latDMS}</td>
+            <td>${lngDMS}</td>
+            <td class="addressCell">불러오는 중...</td>
+          `;
+
+          kakao.maps.event.addListener(marker, 'click', () => {
+            map.setCenter(pos);
+            map.setLevel(5);
+            infoWindow.setContent(makeInfoContent(req, date, latDMS, lngDMS));
+            infoWindow.open(map, marker);
+          });
+
+          row.addEventListener('click', () => {
+            map.setCenter(pos);
+            map.setLevel(5);
+            infoWindow.setContent(makeInfoContent(req, date, latDMS, lngDMS));
+            infoWindow.open(map, marker);
+          });
+
+          tableBody.appendChild(row);
+
+          geocoder.coord2Address(req.lng, req.lat, (result, status) => {
+            if (status === kakao.maps.services.Status.OK && result.length > 0) {
+              const region = result[0].address.region_2depth_name || "정보없음";
+              row.querySelector('.addressCell').textContent = region;
+            } else {
+              row.querySelector('.addressCell').textContent = "주소 조회 실패";
+            }
+          });
+        });
+      });
+
+      kakao.maps.event.addListener(map, 'zoom_changed', () => {
+        updateInfoWindowFontSize();
+      });
+    });
+  </script>
+
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: "Noto Sans KR", "맑은 고딕", Malgun Gothic, sans-serif;
+      background-color: #f9f9f9;
     }
 
-    fetchAndDisplayRequests();
-  </script>
+    #requestsList {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      height: 160px;
+      overflow-y: auto;
+      overflow-x: auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    #requestsList table {
+      border-collapse: collapse;
+      width: auto;
+      min-width: 100%;
+      table-layout: auto;
+      white-space: nowrap;
+    }
+
+    #requestsList th, #requestsList td {
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 15px;
+    }
+
+    #requestsList th {
+      background-color: #4a90e2;
+      color: white;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    #requestsList tr:hover {
+      background-color: #dbe9ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="requestsList">
+    <table>
+      <thead>
+        <tr>
+          <th>순번</th>
+          <th>요청 시간</th>
+          <th>위도</th>
+          <th>경도</th>
+          <th>행정구역</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- 구조 요청 데이터가 여기에 추가됩니다 -->
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>
