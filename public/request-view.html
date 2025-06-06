@@ -2,239 +2,121 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>구조 요청 확인</title>
-  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7&libraries=services"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>구조 요청 목록</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f9f9f9;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.75rem;
+      text-align: left;
+    }
+    th {
+      background-color: #efefef;
+    }
+    tr:nth-child(even) {
+      background-color: #f4f4f4;
+    }
+    .expired {
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <h1>구조 요청 목록</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>시간</th>
+        <th>주소</th>
+        <th>비고</th>
+      </tr>
+    </thead>
+    <tbody id="request-body">
+      <tr><td colspan="3">불러오는 중...</td></tr>
+    </tbody>
+  </table>
 
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    import {
+      getDatabase,
+      ref,
+      remove
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyDAWuBw94gzYiPrUTOY41zque2WvgCnRj4",
-      authDomain: "kcghelp-cf3e4.firebaseapp.com",
-      databaseURL: "https://kcghelp-cf3e4-default-rtdb.firebaseio.com",
-      projectId: "kcghelp-cf3e4",
-      storageBucket: "kcghelp-cf3e4.appspot.com",
-      messagingSenderId: "374111271871",
-      appId: "1:374111271871:web:d1cf45fdc2a93930c77f0a",
-      measurementId: "G-DGDBZ38LW4"
+      apiKey: "AIzaSyAJwYx-PXfwxzh39VmFY3q9evdRB7vUbYk",
+      authDomain: "kcghelp.firebaseapp.com",
+      projectId: "kcghelp",
+      storageBucket: "kcghelp.appspot.com",
+      messagingSenderId: "1099287947809",
+      appId: "1:1099287947809:web:3295c5b7adfcfcfc3f831c",
+      measurementId: "G-J9YNYDY96W",
+      databaseURL: "https://kcghelp-default-rtdb.firebaseio.com"
     };
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const map = new kakao.maps.Map(document.getElementById('map'), {
-        center: new kakao.maps.LatLng(37.5665, 126.9780),
-        level: 8
-      });
+    async function fetchAndDisplayRequests() {
+      const tbody = document.getElementById("request-body");
+      tbody.innerHTML = "<tr><td colspan='3'>불러오는 중...</td></tr>";
 
-      const geocoder = new kakao.maps.services.Geocoder();
-      const infoWindow = new kakao.maps.InfoWindow({ removable: true });
+      try {
+        const response = await fetch("/emergency/requests.json");
+        if (!response.ok) throw new Error("데이터 로드 실패");
 
-      // 현재 infoWindow 내용 중 폰트 크기 상태 변수
-      let currentFontSize = 18; // 기본 폰트 크기(px) (줌 레벨 8일때 기준)
+        const data = await response.json();
+        const now = Date.now();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        const validEntries = [];
 
-      // 줌 레벨에 따라 infoWindow 폰트 크기 조절 함수
-      function updateInfoWindowFontSize() {
-        const zoom = map.getLevel();
-        // 레벨이 낮을수록 확대(1이 최대 확대), 폰트 크기 크게 조절
-        // 레벨 8 기준 18px, 레벨 1일땐 32px 정도로 확대, 레벨 14쯤엔 12px 정도로 축소
-        // 대략적인 비례식: fontSize = 40 - zoom * 2.5 (적당히 조절)
-        currentFontSize = Math.min(Math.max(12, 40 - zoom * 2.5), 32);
+        tbody.innerHTML = "";
 
-        // 열린 infoWindow가 있으면 내용 다시 셋팅해서 크기 반영
-        if (infoWindow.getMap()) {
-          // infoWindow가 연결된 마커의 위치를 알아내기 위해
-          // infoWindow 내부에서 마커 위치를 추적할 방법이 없으니,
-          // infoWindow 내용 재생성에 필요한 데이터는 별도로 저장 필요
-          // 여기서는 간단히 infoWindow의 content HTML 내에서 폰트 크기만 바꾸기
+        for (const [id, req] of Object.entries(data)) {
+          const timestamp = req.timestamp;
+          const isExpired = timestamp && now - timestamp > oneDayMs;
 
-          // infoWindow 내용에서 font-size 부분만 교체
-          let content = infoWindow.getContent();
-          // 정규식으로 font-size 스타일만 찾아 바꾸기
-          content = content.replace(/font-size:\s*\d+px/, `font-size: ${currentFontSize}px`);
+          if (isExpired) {
+            // Firebase에서 삭제
+            await remove(ref(database, `emergency/requests/${id}`));
+            continue;
+          }
 
-          infoWindow.setContent(content);
-        }
-      }
-
-      function decimalToDMS(degrees) {
-        const d = Math.floor(degrees);
-        const minFloat = (degrees - d) * 60;
-        const m = Math.floor(minFloat);
-        const s = ((minFloat - m) * 60).toFixed(2);
-        return `${d}° ${m}' ${s}"`;
-      }
-
-      const tableBody = document.getElementById('tableBody');
-      const requestsRef = ref(database, 'emergency/requests');
-
-      // 마커 저장용 배열 (필요하면 추후 활용 가능)
-      const markers = [];
-
-      // infoWindow 내용 만드는 함수 (폰트 크기 적용)
-      function makeInfoContent(req, date, latDMS, lngDMS) {
-        return `<div style="
-              padding: 12px 16px;
-              font-size: ${currentFontSize}px;
-              font-weight: 600;
-              white-space: normal;
-              word-break: break-word;
-              display: inline-block;
-              background: white;
-              border: 1px solid #888;
-              border-radius: 8px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            ">
-              🆘 <strong>구조 요청</strong><br>
-              📅 ${date.toLocaleString()}<br>
-              📍 위도: ${latDMS}<br>
-              📍 경도: ${lngDMS}
-            </div>`;
-      }
-
-      onValue(requestsRef, (snapshot) => {
-        const data = snapshot.val();
-        tableBody.innerHTML = '';
-        if (!data) return;
-
-        // 기존 마커 전부 삭제
-        markers.forEach(m => m.setMap(null));
-        markers.length = 0;
-
-        const requestsArray = Object.values(data)
-          .filter(req => req.lat && req.lng && req.timestamp)
-          .sort((a, b) => b.timestamp - a.timestamp);
-
-        requestsArray.forEach((req, index) => {
-          const pos = new kakao.maps.LatLng(req.lat, req.lng);
-          const marker = new kakao.maps.Marker({ position: pos, map, title: "구조 요청 위치" });
-          markers.push(marker);
-
-          const latDMS = decimalToDMS(req.lat);
-          const lngDMS = decimalToDMS(req.lng);
-          const date = new Date(req.timestamp);
-          const dateStr = date.toLocaleDateString();
-          const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-
-          const row = document.createElement('tr');
-          row.style.cursor = 'pointer';
-          row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${dateStr}<br>${timeStr}</td>
-            <td>${latDMS}</td>
-            <td>${lngDMS}</td>
-            <td class="addressCell">불러오는 중...</td>
+          const tr = document.createElement("tr");
+          const time = timestamp ? new Date(timestamp).toLocaleString("ko-KR") : "-";
+          tr.innerHTML = `
+            <td>${time}</td>
+            <td>${req.address ?? "-"}</td>
+            <td>${req.memo ?? ""}</td>
           `;
+          tbody.appendChild(tr);
+        }
 
-          // 마커 클릭 시 정보창 열기
-          kakao.maps.event.addListener(marker, 'click', () => {
-            map.setCenter(pos);
-            map.setLevel(5);
-            infoWindow.setContent(makeInfoContent(req, date, latDMS, lngDMS));
-            infoWindow.open(map, marker);
-          });
+        if (tbody.children.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='3'>표시할 요청이 없습니다.</td></tr>";
+        }
 
-          // 테이블 행 클릭 시 정보창 열기
-          row.addEventListener('click', () => {
-            map.setCenter(pos);
-            map.setLevel(5);
-            infoWindow.setContent(makeInfoContent(req, date, latDMS, lngDMS));
-            infoWindow.open(map, marker);
-          });
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = "<tr><td colspan='3'>불러오기 실패</td></tr>";
+      }
+    }
 
-          tableBody.appendChild(row);
-
-          geocoder.coord2Address(req.lng, req.lat, (result, status) => {
-            if (status === kakao.maps.services.Status.OK && result.length > 0) {
-              const region = result[0].address.region_2depth_name || "정보없음";
-              row.querySelector('.addressCell').textContent = region;
-            } else {
-              row.querySelector('.addressCell').textContent = "주소 조회 실패";
-            }
-          });
-        });
-      });
-
-      // 줌 변경 이벤트에 폰트 크기 업데이트 함수 연결
-      kakao.maps.event.addListener(map, 'zoom_changed', () => {
-        updateInfoWindowFontSize();
-      });
-    });
+    fetchAndDisplayRequests();
   </script>
-
-  <style>
-    html, body, #map {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      font-family: "Noto Sans KR", "맑은 고딕", Malgun Gothic, sans-serif;
-      background-color: #f9f9f9;
-    }
-
-    #requestsList {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      z-index: 100;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 10px;
-      height: 160px;
-      overflow-y: auto;
-      overflow-x: auto;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    #requestsList table {
-      border-collapse: collapse;
-      width: auto;
-      min-width: 100%;
-      table-layout: auto;
-      white-space: nowrap;
-    }
-
-    #requestsList th, #requestsList td {
-      border: 1px solid #ddd;
-      padding: 6px 10px;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 15px;
-    }
-
-    #requestsList th {
-      background-color: #4a90e2;
-      color: white;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      white-space: nowrap;
-    }
-
-    #requestsList tr:hover {
-      background-color: #dbe9ff;
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <div id="requestsList">
-    <table>
-      <thead>
-        <tr>
-          <th>순번</th>
-          <th>요청 시간</th>
-          <th>위도</th>
-          <th>경도</th>
-          <th>행정구역</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody">
-        <!-- 구조 요청 데이터가 여기에 추가됩니다 -->
-      </tbody>
-    </table>
-  </div>
 </body>
 </html>
