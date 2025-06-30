@@ -33,6 +33,9 @@
 <button id="mapTypeSelector">항공뷰</button>
 
 <script>
+  // 카카오 개발자 콘솔에서 발급받은 네이티브 앱 키 (앱 실행 URL 스킴에 사용)
+  const KAKAO_NATIVE_APP_KEY = 'b6983e34dfa642ded2d041d7dfd786627'; //
+
   // 1. 지도 초기화
   const map = new kakao.maps.Map(document.getElementById('map'), {
     center: new kakao.maps.LatLng(37.75, 128.9), // 초기 지도 중심 (강원도 부근)
@@ -144,29 +147,32 @@
 
               // 사용자의 현재 위치를 가져왔을 경우에만 길찾기 버튼 제공
               if (startLat !== null && startLng !== null) {
-                // 모바일 환경 (iOS 또는 Android) 판단
-                if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) { // iOS 디바이스
-                  appUrl = `kakaomap://route?sp=${startLat},${startLng}&ep=${destLat},${destLng}&by=CAR`;
-                  webUrl = `https://map.kakao.com/link/to/${startName},${startLat},${startLng}/${destName},${destLat},${destLng}`;
-                } else if (navigator.userAgent.match(/Android/i)) { // Android 디바이스
-                  appUrl = `kakaomap://route?sp=${startLat},${startLng}&ep=${destLat},${destLng}&by=CAR`;
-                  webUrl = `https://map.kakao.com/link/to/${startName},${startLat},${startLng}/${destName},${destLat},${destLng}`;
-                } else { // PC 웹 또는 기타
-                  webUrl = `https://map.kakao.com/link/to/${startName},${startLat},${startLng}/${destName},${destLat},${destLng}`;
-                }
+                // 카카오맵 앱 실행 URL 스킴 (네이티브 앱 키 사용)
+                appUrl = `kakaomap://route?sp=${startLat},${startLng}&ep=${destLat},${destLng}&by=CAR&appkey=${KAKAO_NATIVE_APP_KEY}`; //
+                
+                // 웹 폴백 URL
+                webUrl = `https://map.kakao.com/link/to/${encodeURIComponent(startName)},${startLat},${startLng}/${encodeURIComponent(destName)},${destLat},${destLng}`;
 
                 // 길찾기 버튼이 포함된 정보창 내용
                 iwContent = `
                   <div style="padding:6px; font-size:13px;">
                     <strong>${item.name || "인명구조함"}</strong><br>
                     <button onclick="
-                      if ('${appUrl}') { // 앱 URL이 있다면 앱 실행 시도
-                        window.location.href = '${appUrl}';
-                        setTimeout(function() {
-                          window.location.href = '${webUrl}'; // 0.5초 후 웹으로 폴백
-                        }, 500); 
-                      } else { // 앱 URL이 없다면 바로 웹으로 이동 (PC 환경 등)
-                        window.location.href = '${webUrl}';
+                      var userAgent = navigator.userAgent;
+                      if (userAgent.match(/iPhone|iPad|iPod|Android/i)) {
+                          window.location.href = '${appUrl}';
+                          var appFallbackTimeout = setTimeout(function() {
+                              window.location.href = '${webUrl}';
+                          }, 1000); // 1초 대기
+
+                          document.addEventListener('visibilitychange', function handler() {
+                              if (document.visibilityState === 'hidden') {
+                                  clearTimeout(appFallbackTimeout);
+                                  document.removeEventListener('visibilitychange', handler);
+                              }
+                          });
+                      } else {
+                          window.location.href = '${webUrl}';
                       }
                     " style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
                       내 위치로 길찾기 (${startName} → ${destName})
@@ -179,7 +185,7 @@
                   <div style="padding:6px; font-size:13px;">
                     <strong>${item.name || "인명구조함"}</strong><br>
                     <span>내 위치를 알 수 없어 길찾기 불가</span><br>
-                    <button onclick="window.location.href='https://map.kakao.com/link/map/${destName},${destLat},${destLng}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                    <button onclick="window.location.href='https://map.kakao.com/link/map/${encodeURIComponent(destName)},${destLat},${destLng}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
                       지도에서 인명구조함 위치 보기
                     </button>
                   </div>
