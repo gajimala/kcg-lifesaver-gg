@@ -127,20 +127,21 @@
             naver.maps.Event.addListener(marker, 'click', function () {
               naverInfoWindow.close(); // 기존 정보창 닫기
 
-              const startLat = item.lat; // 출발점: 클릭된 인명구조함 위도
-              const startLng = item.lng; // 출발점: 클릭된 인명구조함 경도
-              const destLat = myLat;     // 도착점: 사용자 현재 위도
-              const destLng = myLng;     // 도착점: 사용자 현재 경도
+              // *** 변경된 부분: 출발지/도착지 변수 설정 ***
+              const startLat = myLat;     // 출발점: 사용자 현재 위도
+              const startLng = myLng;     // 출발점: 사용자 현재 경도
+              const destLat = item.lat; // 도착점: 클릭된 인명구조함 위도
+              const destLng = item.lng; // 도착점: 클릭된 인명구조함 경도
 
-              const startName = item.name || "인명구조함";
-              const destName = "내 위치";
+              const startName = "내 위치";
+              const destName = item.name || "인명구조함";
 
               let appUrl = '';
               let webUrl = '';
               let iwContent = '';
 
               // 내 위치가 유효한 경우에만 길찾기 버튼 제공
-              if (destLat !== null && destLng !== null) {
+              if (startLat !== null && startLng !== null) { // 출발지가 내 위치이므로 myLat/myLng 유효성 검사
                 // 네이버 지도 앱 길찾기 URL 스킴 (by=CAR 및 인코딩 적용)
                 appUrl = `nmap://route?slat=${startLat}&slng=${startLng}&sname=${encodeURIComponent(startName)}&dlat=${destLat}&dlng=${destLng}&dname=${encodeURIComponent(destName)}&by=CAR&appname=${encodeURIComponent('GangneungLifesaver1')}`;
                 
@@ -154,7 +155,6 @@
                       var userAgent = navigator.userAgent;
                       // iOS나 Android 모바일 기기일 경우 앱 스킴 시도
                       if (userAgent.match(/iPhone|iPad|iPod|Android/i)) {
-                          // *** 변경된 부분: nmap:// 스킴을 직접 호출하여 앱 실행 시도 ***
                           window.location.href = '${appUrl}';
 
                           // 앱 실행 실패 시 웹으로 폴백
@@ -183,7 +183,7 @@
                   <div style="padding:6px; font-size:13px;">
                     <strong>${item.name || "인명구조함"}</strong><br>
                     <span>내 위치를 알 수 없어 길찾기 불가</span><br>
-                    <button onclick="window.location.href='https://m.map.naver.com/place/list.naver?query=${encodeURIComponent(item.name || '인명구조함')}&lat=${startLat}&lng=${startLng}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                    <button onclick="window.location.href='https://m.map.naver.com/place/list.naver?query=${encodeURIComponent(item.name || '인명구조함')}&lat=${item.lat}&lng=${item.lng}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
                       네이버 지도에서 인명구조함 보기
                     </button>
                   </div>
@@ -215,7 +215,7 @@
       const lat = position.lat();
       const lng = position.lng();
 
-      if (lat >= sw.lat() && lat <= ne.lat() && lng >= sw.lng() && lng <= ne.lng()) {
+      if (lat >= sw.lat() && lat <= ne.lat() && lat <= ne.lat() && lng >= sw.lng() && lng <= ne.lng()) {
         marker.setMap(naverMap); // 지도에 마커 표시
       } else {
         marker.setMap(null); // 지도에서 마커 숨김
