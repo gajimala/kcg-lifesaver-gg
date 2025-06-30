@@ -127,6 +127,21 @@
             naver.maps.Event.addListener(marker, 'click', function () {
               naverInfoWindow.close(); // 기존 정보창 닫기
 
+              // Kodular 웹뷰에서 JavaScript를 통해 앱으로 값을 전달하기 위한 함수 (아래에서 정의)
+              function sendToKodularApp(key, value) {
+                  if (typeof window.AppInventor !== 'undefined' && typeof window.AppInventor.setWebViewString !== 'undefined') {
+                      // Kodular의 WebViewer 컴포넌트가 `setWebViewString`을 지원하는 경우
+                      window.AppInventor.setWebViewString(key + "::" + value);
+                  } else if (typeof window.Android !== 'undefined' && typeof window.Android.postMessage !== 'undefined') {
+                      // 다른 웹뷰 인터페이스 (예: Android Webview의 addJavascriptInterface)
+                      window.Android.postMessage(key + "::" + value);
+                  } else {
+                      // Kodular에서 제공하는 특정 인터페이스가 없으면 console.log로 디버깅
+                      console.log("No Kodular/Android Webview interface found. Attempting direct URL change for debug. Key:", key, "Value:", value);
+                      // 이 경우 실제 앱에서는 작동하지 않을 가능성이 높음.
+                  }
+              }
+
               const startLat = item.lat; // 출발점: 클릭된 인명구조함 위도
               const startLng = item.lng; // 출발점: 클릭된 인명구조함 경도
               const destLat = myLat;     // 도착점: 사용자 현재 위도
@@ -141,9 +156,8 @@
 
               // 내 위치가 유효한 경우에만 길찾기 버튼 제공
               if (destLat !== null && destLng !== null) {
-                // 네이버 지도 앱 길찾기 URL 스킴
-                // 'YOUR_APP_NAME'을 실제 네이버 개발자 콘솔에 등록된 서비스 이름으로 변경했습니다.
-                appUrl = `nmap://route/car?slat=${startLat}&slng=${startLng}&dlat=${destLat}&dlng=${destLng}&appname=GangneungLifesaver1`;
+                // *** 네이버 지도 앱 길찾기 URL 스킴 수정 (by=CAR 및 인코딩 적용) ***
+                appUrl = `nmap://route?slat=${startLat}&slng=${startLng}&sname=${encodeURIComponent(startName)}&dlat=${destLat}&dlng=${destLng}&dname=${encodeURIComponent(destName)}&by=CAR&appname=${encodeURIComponent('GangneungLifesaver1')}`;
                 
                 // 네이버 지도 웹 길찾기 URL (출발지+도착지)
                 webUrl = `https://m.map.naver.com/directions/#/car/${startLat},${startLng},${encodeURIComponent(startName)},${destLat},${destLng},${encodeURIComponent(destName)}`;
@@ -152,17 +166,22 @@
                   <div style="padding:6px; font-size:13px;">
                     <strong>${item.name || "인명구조함"}</strong><br>
                     <button onclick="
+                      // *** Kodular 연동을 위해 window.location.href 대신 메시지 전달 방식 사용 ***
+                      // 또는 Kodular의 Web Viewer가 URL 변경을 직접 감지하고 처리하도록 기대
                       var userAgent = navigator.userAgent;
-                      // iOS나 Android 모바일 기기일 경우 앱 스킴 시도
                       if (userAgent.match(/iPhone|iPad|iPod|Android/i)) {
-                          window.location.href = '${appUrl}';
-                          // 앱 실행 실패 시 웹으로 폴백
+                          // Kodular 웹뷰에서 nmap:// 스킴을 직접 처리하도록 시도
+                          // Kodular 앱으로 nmap URL을 'message' 형태로 전달
+                          sendToKodularApp('naver_map_url', '${appUrl}');
+
+                          // 앱 실행 실패 시 웹으로 폴백 (JavaScript 레벨에서는 작동하지 않을 수 있음)
+                          // 이 setTimeout은 Kodular 블록에서 앱 실행 실패 시 처리하는 것이 더 정확함
                           var appFallbackTimeout = setTimeout(function() {
                               // 앱으로 전환되지 않았을 경우 웹으로 이동
-                              window.location.href = '${webUrl}';
-                          }, 500); // 0.5초 대기
+                              window.location.href = '${webUrl}'; 
+                          }, 1000); // 1초 대기 (Kodular 앱이 처리할 시간을 줌)
 
-                          // 앱이 실행되어 페이지가 숨겨지면 타이머 취소
+                          // 앱이 실행되어 페이지가 숨겨지면 타이머 취소 (Kodular 웹뷰에서는 이 이벤트가 발생하지 않을 수 있음)
                           document.addEventListener('visibilitychange', function handler() {
                               if (document.visibilityState === 'hidden') {
                                   clearTimeout(appFallbackTimeout);
