@@ -142,8 +142,8 @@
               // 내 위치가 유효한 경우에만 길찾기 버튼 제공
               if (destLat !== null && destLng !== null) {
                 // 네이버 지도 앱 길찾기 URL 스킴
-                // YOUR_APP_NAME을 네이버 개발자 콘솔에 등록된 서비스 이름으로 변경하세요.
-                appUrl = `nmap://route/car?slat=${startLat}&slng=${startLng}&dlat=${destLat}&dlng=${destLng}&appname=YOUR_APP_NAME`;
+                // 'YOUR_APP_NAME'을 실제 네이버 개발자 콘솔에 등록된 서비스 이름으로 변경했습니다.
+                appUrl = `nmap://route/car?slat=${startLat}&slng=${startLng}&dlat=${destLat}&dlng=${destLng}&appname=GangneungLifesaver1`;
                 
                 // 네이버 지도 웹 길찾기 URL (출발지+도착지)
                 webUrl = `https://m.map.naver.com/directions/#/car/${startLat},${startLng},${encodeURIComponent(startName)},${destLat},${destLng},${encodeURIComponent(destName)}`;
@@ -157,12 +157,18 @@
                       if (userAgent.match(/iPhone|iPad|iPod|Android/i)) {
                           window.location.href = '${appUrl}';
                           // 앱 실행 실패 시 웹으로 폴백
-                          setTimeout(function() {
-                              // 페이지가 여전히 보이는 상태라면 (앱으로 전환 안 됨) 웹으로 이동
-                              if (document.visibilityState === 'visible') {
-                                  window.location.href = '${webUrl}';
-                              }
+                          var appFallbackTimeout = setTimeout(function() {
+                              // 앱으로 전환되지 않았을 경우 웹으로 이동
+                              window.location.href = '${webUrl}';
                           }, 500); // 0.5초 대기
+
+                          // 앱이 실행되어 페이지가 숨겨지면 타이머 취소
+                          document.addEventListener('visibilitychange', function handler() {
+                              if (document.visibilityState === 'hidden') {
+                                  clearTimeout(appFallbackTimeout);
+                                  document.removeEventListener('visibilitychange', handler);
+                              }
+                          });
                       } else { // PC 웹 등
                           window.location.href = '${webUrl}';
                       }
