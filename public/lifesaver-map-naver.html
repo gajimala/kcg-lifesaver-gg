@@ -6,7 +6,6 @@
   <title>인명구조함 지도 (네이버)</title>
   
   <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
-  <script type="text/javascript" src="marker-clusterer.js"></script> 
   
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
@@ -43,11 +42,8 @@
   let myLat = null; // 사용자의 현재 위도
   let myLng = null; // 사용자의 현재 경도
   let myLocationMarker = null; // 사용자 현재 위치 마커
-  // let markers = []; // 클러스터러 사용 시 개별 마커 배열은 직접 관리할 필요가 줄어듭니다.
-  let lifesavers = []; // lifesavers.json에서 불러온 데이터 (다시 사용)
-
-  // 클러스터러 변수 선언
-  let markerClusterer = null;
+  let markers = []; // 인명구조함 마커 배열
+  let lifesavers = []; // lifesavers.json에서 불러온 데이터
 
   // 정보창 객체 (네이버용)
   const naverInfoWindow = new naver.maps.InfoWindow();
@@ -60,42 +56,9 @@
       mapTypeId: naver.maps.MapTypeId.NORMAL // 기본 지도 타입
     });
 
-    // 마커 클러스터러 초기화
-    // marker-clusterer.js 파일이 올바르게 로드되어야 합니다.
-    markerClusterer = new MarkerClusterer({
-        map: naverMap,
-        minZoom: 10, // 이 줌 레벨부터 클러스터링 시작
-        maxZoom: 18, // 이 줌 레벨까지 클러스터링 적용 (그 이상은 개별 마커)
-        disableClickZoom: false, // 클러스터 클릭 시 지도 확대 여부 (true면 확대 안함)
-        styles: [ // 클러스터 마커 스타일
-            {
-                min: 2, // 최소 2개 마커부터 클러스터 형성
-                width: 40,
-                height: 40,
-                background: 'rgba(255, 100, 100, 0.7)',
-                color: '#fff',
-                borderRadius: '20px',
-                textAlign: 'center',
-                lineHeight: '40px',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                border: '2px solid white',
-                boxShadow: '0 0 5px rgba(0,0,0,0.5)'
-            },
-            // 클러스터에 포함된 마커 개수에 따라 다른 스타일을 적용할 수 있습니다.
-            // { min: 10, ... },
-            // { min: 100, ... }
-        ]
-    });
-
     // 네이버 지도 이벤트 리스너 연결
-    // 클러스터러를 사용하면 개별 마커의 가시성 관리는 클러스터러가 담당합니다.
-    // 따라서 naver.maps.Event.addListener(naverMap, 'bounds_changed', updateMarkers); 는 더 이상 필요 없습니다.
+    naver.maps.Event.addListener(naverMap, 'bounds_changed', updateMarkers);
     naver.maps.Event.addListener(naverMap, 'click', function() { naverInfoWindow.close(); });
-    // 클러스터 마커 클릭 시에도 정보창 닫기 (선택 사항)
-    if (markerClusterer) {
-        naver.maps.Event.addListener(markerClusterer, 'clusterclick', function() { naverInfoWindow.close(); });
-    }
   }
 
   // 2. 사용자 위치 추적 및 마커 업데이트 함수
@@ -131,8 +94,7 @@
 
   // 3. 인명구조함 마커 로드 및 이벤트 리스너 설정 함수
   function loadMarkers() {
-    // ** JSON 파일을 서버에서 불러오는 기존 방식을 유지합니다. **
-    fetch("/lifesavers") 
+    fetch("/lifesavers.json") // JSON 파일 경로 명확히
       .then(response => {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -140,20 +102,18 @@
         return response.json();
       })
       .then(data => {
-        lifesavers = data; // 불러온 데이터를 lifesavers 변수에 저장
-        let tempMarkers = []; // 클러스터러에 추가할 임시 마커 배열
-
-        lifesavers.forEach(item => {
+        lifesavers = data;
+        data.forEach(item => {
           const lat = parseFloat(item.lat);
           const lng = parseFloat(item.lng);
 
           if (!isNaN(lat) && !isNaN(lng)) {
             const marker = new naver.maps.Marker({
               position: new naver.maps.LatLng(lat, lng),
-              // map: naverMap, // 클러스터러가 마커를 지도에 추가하므로 여기서는 제거합니다.
+              map: naverMap, // 네이버 지도에 마커 추가
               title: item.name || "인명구조함",
               icon: {
-                url: "/lifesaver-icon.png", // 인명구조함 마커 이미지 경로 (프로젝트 폴더 내에 있어야 함)
+                url: "/lifesaver-icon.png", // 인명구조함 마커 이미지 경로
                 size: new naver.maps.Size(27, 30),
                 scaledSize: new naver.maps.Size(27, 30),
                 origin: new naver.maps.Point(0, 0),
@@ -161,11 +121,13 @@
               }
             });
 
+            markers.push(marker);
+
             // 마커 클릭 이벤트 리스너 (네이버 지도 이벤트)
             naver.maps.Event.addListener(marker, 'click', function () {
               naverInfoWindow.close(); // 기존 정보창 닫기
 
-              // 출발지/도착지 변수 설정
+              // *** 변경된 부분: 출발지/도착지 변수 설정 ***
               const startLat = myLat;     // 출발점: 사용자 현재 위도
               const startLng = myLng;     // 출발점: 사용자 현재 경도
               const destLat = item.lat; // 도착점: 클릭된 인명구조함 위도
@@ -228,17 +190,11 @@
                 `;
               }
               naverInfoWindow.setContent(iwContent);
-              // 정보창은 마커의 위치에 엽니다.
-              naverInfoWindow.open(naverMap, marker.getPosition()); 
+              naverInfoWindow.open(naverMap, marker);
             });
-            tempMarkers.push(marker); // 마커를 임시 배열에 추가
           }
         });
-        // 모든 마커를 클러스터러에 추가
-        if (markerClusterer) {
-            markerClusterer.setMarkers(tempMarkers);
-        }
-        // updateMarkers(); // 클러스터러 사용 시 이 함수는 더 이상 필요 없습니다.
+        updateMarkers(); // 초기 화면에 보이는 마커만 표시하도록 업데이트
       })
       .catch(err => {
         console.error("lifesavers.json 불러오기 오류:", err);
@@ -246,26 +202,26 @@
       });
   }
 
-  // 4. 지도 영역 변경 시 마커 업데이트 함수 (클러스터러 사용 시 이 함수는 필요 없어집니다)
-  // function updateMarkers() {
-  //   if (!markers.length || !naverMap) return;
+  // 4. 지도 영역 변경 시 마커 업데이트 함수 (가시 영역 최적화)
+  function updateMarkers() {
+    if (!markers.length || !naverMap) return;
 
-  //   const bounds = naverMap.getBounds();
-  //   const sw = bounds.getSW();
-  //   const ne = bounds.getNE();
+    const bounds = naverMap.getBounds();
+    const sw = bounds.getSW();
+    const ne = bounds.getNE();
 
-  //   markers.forEach((marker) => {
-  //     const position = marker.getPosition();
-  //     const lat = position.lat();
-  //     const lng = position.lng();
+    markers.forEach((marker) => {
+      const position = marker.getPosition();
+      const lat = position.lat();
+      const lng = position.lng();
 
-  //     if (lat >= sw.lat() && lat <= ne.lat() && lat <= ne.lat() && lng >= sw.lng() && lng <= ne.lng()) {
-  //       marker.setMap(naverMap); // 지도에 마커 표시
-  //     } else {
-  //       marker.setMap(null); // 지도에서 마커 숨김
-  //     }
-  //   });
-  // }
+      if (lat >= sw.lat() && lat <= ne.lat() && lat <= ne.lat() && lng >= sw.lng() && lng <= ne.lng()) {
+        marker.setMap(naverMap); // 지도에 마커 표시
+      } else {
+        marker.setMap(null); // 지도에서 마커 숨김
+      }
+    });
+  }
 
   // 5. 초기 로딩 시 사용자 현재 위치로 지도 중심 설정 (네이버 지도)
   if (navigator.geolocation) {
@@ -276,7 +232,7 @@
       // 지도가 초기화된 후에만 setCenter 호출
       if (naverMap) {
         naverMap.setCenter(myLocation);
-        naverMap.setZoom(17); // 현재 위치로 이동 시 줌 레벨 조정
+        naverMap.setZoom(17);
       }
     }, function(error) {
       console.error("초기 위치 가져오기 실패:", error);
@@ -285,7 +241,7 @@
 
   // 페이지 로드 완료 후 지도 초기화 및 기능 시작
   window.onload = function() {
-    initMap(); 
+    initMap(); // 네이버 지도 초기화 함수 이름 변경 (initMaps -> initMap)
     startTracking(); // 내 위치 실시간 추적 시작
     loadMarkers();   // 인명구조함 마커 데이터 로드 및 지도에 표시
   };
@@ -295,7 +251,7 @@
     if (myLat && myLng && naverMap) {
       const center = new naver.maps.LatLng(myLat, myLng);
       naverMap.setCenter(center);
-      naverMap.setZoom(17); // 내 위치로 이동 시 줌 레벨 조정
+      naverMap.setZoom(17);
     } else {
       alert("내 위치 정보를 가져올 수 없습니다. 위치 권한을 허용했는지 확인해주세요.");
     }
