@@ -132,7 +132,7 @@
   // 3. 인명구조함 마커 로드 및 이벤트 리스너 설정 함수
   function loadMarkers() {
     // ** JSON 파일을 서버에서 불러오는 기존 방식을 유지합니다. **
-    fetch("/lifesavers.json") 
+    fetch("/lifesavers") 
       .then(response => {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
